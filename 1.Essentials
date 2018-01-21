@@ -1,0 +1,766 @@
+1. Essentials
+
+192.168.56.1
+
+192.168.56.15 - Centos
+
+192.168.56.16
+
+sudo useradd -m -u 1001 bob
+
+echo "Hello" > file1
+echo "Hello" > file1
+echo "Hello" > file1
+
+cat file1
+
+non-idempotent
+echo "Hello" >> file1
+echo "Hello" >> file1
+
+cat file1
+
+python 
+36 ** 1
+56 ** 1
+
+2.3 Summary
+#Talked about courses list
+#Lab machines
+#Through Demonstrations
+
+3.1 Installing the Puppet Client
+#Who are Puppetlabs
+#Create Puppetlabs repositories
+#Install the Puppet AIO client
+#Locate important Puppet files and directories
+#Running Puppet with and without sudo
+
+Puppet labs created in 2005 by Luke Kanies
+
+First commercial release in 2011
+
+Support for Linux, Unix and Winodws
+
+Open Source V4.5 and Puppet Enterprise 2016-1
+
+#Create Repos for Puppet-Labs
+Most distributions still ship Puppet 3 in their internal repositories. To be able to make use of the latest Puppet 4 code then we must first setup software repositories pointing to Puppetlabs
+
+#package Collection repository centos
+puppet-collections are new to Puppet 4 and ensure that all dependency packages such as heira, facter and ruby come from the same repository ensure most compatibility with the client
+
+sudo rpm -Uvh \ https://yum.puppetlabs.com/puppetlabs-release-pc1-el-7.noarch.rpm
+
+#Package Collection Repository Ubuntu
+The process for Ubuntu is similar. Here we use the code name of "trusty" for the 14.04 repository
+
+wget http://apt.puppetlabs.com/puppetlabs-release-pc1-trusty.deb
+sudo dpkg -i puppetlabs-release-pc1-trusty.deb
+sudo apt-get update
+
+
+#inCentos
+sudo yum install -y https://yum.puppetlabs.com/puppetlabs-release-pc1-el-7.noarch.rpm
+
+yum repolist
+
+#in ubuntu
+
+sudo wget http://apt.puppetlabs.com/puppetlabs-release-pc1-trusty.deb
+
+sudo dpkg -i puppetlabs-release-pc1-el-7
+
+sudo apt-get update
+
+
+#Installing the Client
+On both ubuntu and centos systems we can now install the all the one client. To ensure that the package will not clash with the standard repositories the package name is puppet-agent.
+
+sudo yum install puppet-agent #Centos
+sudo apt-get install puppet-agent #Ubuntu
+
+#check the path
+#in Centos
+
+ls -l /opt/puppetlabs/bin
+
+#Binary Locations
+A subset of executable are available in: /opt/puppetlabs/bin. This is added to the PATH variable.
+
+Other executables are in /opt/puppetlabs/puppet/bin. this is not in the PATH and makes it less likely these programs will be used in error.
+
+#Main configuration
+The Main configuration directory is: /etc/puppetlabs/puppet. The main configuration file is puppet.conf
+
+This makes Puppet Open Source now consistent with Puppet Enterprise
+
+#Display Data
+We can use the puppet command to display configuration data.
+puppet agent --version
+
+puppet config print
+
+puppet config print confdir
+puppet config print certname
+puppet config print { confdir rundir ssldir runinterval }
+
+#Locate file and Directories
+#In Centos
+ls -l /opt/puppetlabs/bin/
+cd /opt/puppetlabs/puppet/bin
+pwd
+ls
+
+cat /etc/proile.d/puppet-agent.sh
+#Copy and paste below command
+export PATH=$PATH:/opt/puppetlabs/bin
+
+puppet --version
+4.5.2
+
+su -
+
+puppet config print
+puppet config print confdir
+
+puppet config print vardir
+
+puppet config print { confdir rundir runinterval }
+
+#sudo su or not
+Plain User: Different configuration path
+su: need to know the root password
+sudo: need to update the secure_path
+
+#Centos
+puppet config print { confdir ssldir vardir }
+
+puppet resource user bob
+
+su -
+
+puppet resource user pavan
+
+exit
+
+sudo puppet resource user
+
+sudo visudo
+
+#search for /secure_path
+#add below to the path
+:/opt/puppetlabs/bin
+
+#save
+:wq!
+
+sudo puppet resource user
+
+#if user not created 
+#below command will create user
+sudo puppet resource user sunny
+
+sudo puppet resource user sunny --edit
+#modify
+ensure => 'present',
+managehome => true,
+uid => '2001',
+
+save
+sudo puppet resource user sunny
+
+--------------
+Summary
+
+puppetlabs founded 2015
+puppet 4 users puppet collections
+puppet-agent
+PATH : /opt/puppetlabs/bin
+
+Collection: /opt/puppetlabs/puppet/bin
+sudo: secure_path
+
+***************
+Working with Puppet Apply and Manifests
+
+what are the puppet manifests
+using puppet apply
+ensure puppet agent is stopped and disabled
+puppet style guide
+syntax highlighing and styling in vim
+
+#Puppet Manifests
+Text Files with .pp suffix
+Contain Puppet Code
+#for Puppet Server-Client architecture
+site.pp
+#each module have
+init.pp
+
+#Hellow World
+The notify resource type can be used to send a message to the agent log or screen if being used interactively. This makes a great and simple first manifest
+
+notify { 'Hello World[: }
+
+#Validate the manifest
+Although this manifest is very simple we should get in the habit of validating code as we create it. Helping to keep our code robust and healthy.
+
+sudo puppet parset validate helloworld.pp
+
+/home/vagrant
+
+#Puppet Architecture
+
+1. Puppet Agent
+Runs on clients and send facts to the server.
+
+1. Puppet Server:
+Collects facts from agents and compiles a catalog for the agents to apply.
+
+2. puppet apply:
+A combination of puppet agent and puppet server allowing the client jto run in a standalone mode.
+
+in this course we focus on using the puppet apply application to simplify the setup needed to learn the puppet language.
+
+#Puppet Apply
+We can use the application puppet apply to enforce a local manifest or puppet code
+
+sudo puppet apply helloworld.pp
+
+sudo puppet apply -e "notify { "hello world" : }"
+
+#Controlling the Agent
+We currently do want to use the Puppet Agent. This can run as a daemon service so we should check that it is both stopped and disabled.
+
+sudo puppet resource service puppet
+
+sudo puppet resource service puppet > puppet-service.pp
+
+service { 'puppet':
+  ensure => 'stopped',
+  enable => false,
+ }
+ 
+ sudo puppet parser validate puppet-service.pp
+ sudo puppet apply puppet-service.pp
+ 
+ cat !$
+ 
+ #start puppet service
+ sudo systemctl start puppet
+ 
+ #run the puppet apply again
+ sudo puppet apply puppet-service.pp
+ 
+ #copy the puppet-service.pp code in to ubuntu pc over remotely
+ scp puppet-service.pp vagrant@192.168.56.16:
+ yes
+ 
+ #on Ubuntu
+ sudo puppet resource service puppet
+ 
+ sudo puppet apply puppet-service.pp
+ 
+ #4.5 The Puppet Style Guide
+ Most languages have their recommend style guide. The way the code should be laid out. The full guide is in the documentation.
+ 
+ https://docs.puppet.com/guides/style_guide.html
+ 
+ IDEs - IDEs or Integrated Design Environments can help with styling. We use the text editor VIM in this course. Even this though can help with styling. It is easiest to install the required elements using a Puppet Module.
+ 
+ #for syntax hilighting install below module
+ 
+ sudo puppet module install theurbanpenguin/puppet_vim
+ 
+ include puppet_vim
+ 
+ sudo puppet parser validate puppet-vim.pp
+ 
+ sudo puppet apply puppet-vim.pp
+ 
+#Configuring VIM and Puppet Styling
+
+vim user.pp
+
+user { 'u1':
+	managehome => true,
+	uid => 2002,
+:q!
+
+sudo puppet module list
+
+sudo puppet module install theurbanpenguin/puppet_vim
+
+sudo puppet module list
+
+sudo puppet apply -e "include puppet_vim"
+
+vim user.pp
+
+user { 'u2':
+ managehome => true,
+ uid => '2002',
+ ensure => 'present',
+ }
+
+ #In ubuntu
+ sudo puppet module install theurbanpenguin/puppet_vim
+ sudo puppet apply -e "include puppet_vim"
+ 
+ #Summary
+ Puppet Manifests .pp text files
+ notify { 'hello world': }
+ validate with : sudo puppet parser validate test.pp
+ 
+ apply manifest : sudo puppet apply test.pp
+ 
+ apply code : sudo puppet -e \"notify { 'message':}"
+ 
+ Adding Style and Color
+ install module : sudo puppet module install \ theurbanpenguin/puppet_vim
+ Apply : sudo puppet apply -e \"include puppet_vim"
+ ***********
+ 
+ 5. Working with Puppet Resources
+ 
+ #List all resources : 
+ puppet describe --list
+ 
+ #list documentation for the file resource.
+ puppet describe file
+ 
+ #Making use of the path parameter via namevar and the title.
+ 
+ file { '/etc/motd':
+  ensure => 'file',
+  content => 'My message',
+ }
+ 
+ #We can use the path attribute independent of the tile.
+ file { 'Message':
+	ensure => 'file',
+	content => 'My message',
+	path => '/etc/motd',
+	}
+#installing a package
+ package { 'ntp':
+	ensure => 'installed',
+	}
+#Ensure a service is running and enabled to start on system boot.
+
+ service { 'ntpd':
+  ensure => 'running',
+  enable => true,
+ }
+ 
+# Installing the standard library gives us access to functions such as pw_hash
+
+sudo puppet module install puppetlabs\stdlib
+
+#Where we need consitent settings for many resources we can use resource defaults.
+
+File {
+	owner => 'root',
+	mode => '0600',
+}
+
+--------------
+5.1 Puppet Resources
+
+Puppet resources : the big three
+	package
+	file
+	service
+Puppet standard library
+Users and Groups
+Hosts
+SSH_Authorized_Keys
+Resource Defaults
+
+#Puppet Resource
+When defining a resource we first set the resource type. This should be all in lower-case. We then set a title and key-value pairs. The title and key value pairs are enclosed within brace-brackets.
+
+type { 'title':
+	attribute => value,
+}
+
+#List All available Resource Type
+
+sudo puppet describe --list
+
+#Document a Resource Type
+If you want to read the documentation on a resource type we can use describe it!
+
+sudo puppet describe notify
+sudo puppet describe user
+sudo puppet describe user --short
+
+#namevar
+An attribute may be marked as the namevar for that resource type. We can then use the resource title to populate the designated attribute so long as the attribute is not independently set.
+
+sudo puppet describe file | grep namevar
+
+file { '/etc/motd':
+ ensure => 'file',
+ content => 'welcome to my server',
+ }
+ 
+file { 'Message file':
+ ensure => 'file',
+ content => 'welcome to my server',
+ path => '/etc/motd',
+}
+
+#In centos
+
+sudo puppet describe --list
+udo puppet describe notify
+sudo puppet describe user
+sudo puppet describe file --short
+
+[vagrant@centos7 vagrant]$ sudo puppet describe file | grep namevar
+- **path** (*namevar*)
+
+cat /etc/motd
+
+vim motd.pp
+
+file { '/etc/motd':
+	content => "This is a message\n",
+	ensure => 'file',
+}
+
+:wq!
+
+sudo puppet parser validate motd.pp
+
+sudo puppet apply motd.pp
+
+sudo puppet apply motd.pp
+
+!cat
+
+#The Big Three
+
+package : For example we can ensure that the package NTP is installed on all hosts
+
+File : We can configure the time server configuration file, /etc/ntp.conf, on all hosts.
+
+Service : Finally we can make sure that the service is running on all hosts. In centos this is ntpd and in Ubuntu it is ntp.
+
+#Package 
+A resource package allows us to install or remove a package. We do not normally need to set many parameters. The package name can make use of the title.
+
+package { 'ntp':
+	ensure => 'installed, #'absent', 'purged', 'latest', '4.1'
+	#name => 'ntp', #not used here as we make use of title.
+	provider => 'yum', #Normally not required
+
+#Service
+Having installed a package we can ensure that the service is running and enabled on system startup.
+
+service { 'ntpd':
+ ensure => 'running', #'stopped',
+ #name => 'ntp', #Useful where the service name differs,
+ enable => true, #false
+}
+
+#File 
+Larger configuration files are often best manged with templates or using the source parameter. We will see this in later courses. We can use Variables, which we cover in more detail in the next module, for our content.
+
+$ntp_conf = '#Manged by Puppet
+server 192.168.0.3 iburst
+driftfile /var/lib/ntp/drift'
+
+file { '/etc/ntp.conf':
+ ensure => 'file',
+ content => $ntp_conf, }
+
+#5.3 Manage NTP with Puppet
+
+#In centos
+vim ntp1.pp
+
+$ntp_conf = 'Managed by puppet
+server 192.168.0.3 iburst
+driftfile /var/lib/ntp/drift'
+
+package { 'ntp': } #closed the bracket because default will be installed.
+
+file { '/etc/ntp.conf':
+ ensure => 'file',
+ content => $ntp_conf, 
+ owner => 'root',
+ group => 'wheel',
+ mode => '0664', #0664 readable and writable for the user.
+}
+
+service { 'ntp_service':
+ ensure => 'running',
+ enable => 'true',
+ name => 'ntpd',
+}
+
+:wq!
+
+sudo puppet parser validate ntp1.pp
+
+sudo puppet apply ntp1.pp
+
+#check the configuration file
+cat /etc/ntp.conf
+
+ntpq -p
+
+#in ubuntu
+
+
+5.5 Other Resource to Useful
+
+user
+We can add or remove users with Puppet. The Password we set should be encrypted. for this we can use the pw_hash function from the standard library module. This will need to be installed if not already. The group membership is multi-valued so we use an array.
+
+user { 'pavan':
+	ensure => 'present',
+	managehome => true,
+	groups => ['sudo', 'users'],
+	password => pw_hash(Password1', 'SHA-512', 'salt'),
+}
+
+Group
+Groups again are very simple and will default to ensure => 'present' if not specified.
+
+Local Host Entry
+if DNS is not an option we an easily manage local host entries with the host resource type.
+
+host { 'timeserver': 
+	ip	=> '192.168.0.3',
+	host_aliases => 'tock',
+}
+
+#SSH Authorized Keys
+To make use of public key authenticatiin in SSH a user's public key must be added to the authorized_keys file on all hosts that the user will access. Puppet can make this happen easily. The key we share should be the public key generated by the user.
+
+ssh_authorized_key { 'vagrant@centos7':
+	user => 'tux',
+	type => 'ssh-rsa',
+	key => 'sdjk jsdls kdslkj dlslkjd',
+}
+
+#Making use of Puppet resources
+
+in centos
+
+sudo puppet module install puppetlabs/stdlib
+
+sudo vim user1.pp
+
+user { 'pavan':
+	managehome => true,
+	groups => ['wheel', 'users'],
+	password => pw_hash(Password1', 'SHA-512', 'randon'),
+}
+
+sudo puppet parser validate user1.pp
+
+sudo puppet apply user.pp
+
+id pavan
+su -pavan
+
+vim group.pp
+
+group { 'admins':
+	ensure => 'present',
+}
+
+sudo puppet apply group.pp
+
+#if we want to remove
+
+vim groups.pp
+group { 'admins':
+	ensure => 'absent',
+}
+
+sudo puppet apply groups.pp
+
+#5.7 Creating host entries
+
+cat /etc/hosts
+vim host.pp
+
+host { 'timeserver':
+  ip           => '192.168.0.3',
+  host_aliases => 'tock',
+}
+
+sudo puppet apply host.pp
+
+#5.8 Distributing SSH Keys
+#generate public key for the user
+
+ssh-keygen -t rsa
+
+cd .ssh/
+cat id_rsa.pub
+
+vim ssh.pp
+
+ssh_authorized_key { 'vagrant@centos7':
+	user => ['vagrant', 'pavan'],
+	type => ssh-rsa
+	key => '   ,
+}
+
+#Reading from ssh directoy and copy and paste
+:r .ssh/id_rsa
+
+:wq!
+
+scp ssh.pp vagrant@192.168.56.16:
+
+#on ubuntu
+sudo puppet apply ssh.pp
+
+ls .ssh
+
+#on centos
+ssh vagrant@192.168.56.16:#
+
+# Working with Resource Defaults:
+
+File {
+  owner  => 'root',
+  group  => 'wheel',
+  mode   => '0664',
+  ensure => 'file',
+}
+
+file { '/tmp/puppet':
+  ensure => 'directory',
+}
+
+file { '/tmp/puppet/file1': }
+file { '/tmp/puppet/file2': }
+file { '/tmp/puppet/file3': 
+  mode => '0775',
+}
+
+**************
+6.1 Exposing the Puppet Language
+
+Understanding the Puppet Language
+
+Variables, Arrays, Hashes and HereDoc
+Facts and Facter
+Conditiional Expressions
+Matching to Regular Expressions
+Lambdas and Interations
+
+#Variables
+Variables are denoted with the $. In Puppet 4 variable name must start with a lower-case letter or underscore. They can contain lower-case letters, numbers and underscores.
+
+$message = 'The message' #String
+$ntp_service = 'ntp' 	  #String
+$size = 100				  #Number
+$answer = false 		  #Boolean
+
+#Arrays
+Arrays contains list of values jand are denoted using the [] brackets
+
+$admingroups = ['wheel', 'adm']
+
+#Hashes
+A hashed array contain key pairs, note that the key is quoted unlike a resource.
+
+$user = {
+	'username' => 'pavan',
+	'uid' 		=> '2011',
+}
+
+#Using Variables:
+if a variable is used on its own then we do not need to delimit it. Whereas if it is used within a string we need to delimit the variable with brace-brackets. Use double quotes to interpolate the variable.
+
+service { 'NTP_Service':
+	ensure => 'running',
+	enable => true,
+	name => $ntp_service,
+}
+
+notify {"The ${ntp_service} is up and running":}
+
+#Accessing Arrays
+To access a single value from an array we can use the index or key.
+
+$admingroups = ['wheel','adm']
+notify { "The first group is ${admingroups[0]}": }
+$user = { 'username' => 'pavan', 'userid' = '2001' }
+notify { "The user's name is ${user['username']}": }
+
+#Heredoc
+To create long multi-line string we can use the heredoc. The tag END can be anything but must be consistent at the start and the end of the string.
+
+vim play.pp
+
+#This is a simple test
+
+$ntp_service = 'ntpd'
+notify { $ntp_service : }
+notify { "The ${ntp_service} is running" : }
+}
+
+sudo puppet parser validate play.pp
+
+sudo puppet apply play.pp
+
+cp ntp1.pp ntp2.pp
+
+vim ntp2.pp
+
+-----------
+#Manage NTP on CentOS and Ubuntu hosts
+
+$ntp_conf = @(END) 
+#Managed by puppet
+server 192.168.0.3 iburst prefer
+server uk.pool.ntp.org
+driftfile /var/lib/ntp/drift
+END
+
+case $facts['os']['family'] {
+  'RedHat': {
+    $ntp_service = 'ntpd'
+    $admingroup = 'wheel'
+  }
+  'Debian': {
+    $ntp_service = 'ntp'
+    $admingroup = 'sudo'
+  }
+  default : {
+    fail("Your ${facts['os']['family']} is not supported")
+  }
+}
+
+package { 'ntp': }
+
+File {
+  owner  => 'root',
+  group  => $admingroup,
+  mode   => '0664',
+  ensure => 'file',
+}
+
+file { '/etc/ntp.conf':
+  content => $ntp_conf,
+}
+
+service {'NTP_Service':
+  ensure => 'running',
+  enable => true,
+  name   => $ntp_service,
+}
+
+------------
+6.2 -- continue
