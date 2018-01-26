@@ -1,0 +1,164 @@
+Four challenges of system admin
+-------------------------------
+1.Deploying servers with consistent base configurations
+2. Remediating inconsistent configurations
+3. (Continuous) application deployment
+4. Automation(doing everything fast)
+
+Why not Use Scripts?
+1.Scripts take time - write test debug
+2. Scripts are procedural
+3. Focused on the "how"
+4. Scripts are idosyncratic - Multiple ways of doing the same thing
+-- a script written by one person may be indecipherable to another
+5. Scripts must be writtent for each OS Version or Distribution
+6. Package managers and Names Differ Distributions
+# In ubunut - sudo apt-get install apache1 
+#In Redhat - sudo yum install httpd
+7. Service Managers Differ Across Versions of the same Distribution
+#centos/RHEL 6 - Upstart : restart httpd
+#Centos/RHEL 7 - Systemd : systemd restart httpd
+8. What about windows:
+PowerShell Script written in version 2 may not natively work in version 3+
+
+What about group policies?
+- Don't support non-windows OS
+- Requires an Active Directory Infrastructure
+- Extensible -- using scripts
+
+Why Puppet? -- Puppet overcomes the shortcoming of other configuration management approaches
+
+Puppet Programs Are Declarative vs Procedural
+"What" instead of "how"
+Less complex
+Easy to create, understand and share
+
+Puppet Abstracts Resources - Services, packages, Files and Directories and Users
+
+A single Puppet program can work on different OS and Distributions
+One Puppet master to Rule Them All! Linux, Mac and Windows
+
+What about the aother configuration management systems?
+Puppet Enterprise ranked first
+
+CF Engine - Complex, Behaves differently across OS
+Chef - Requires Knoledge of Ruby
+PUppet is used by many organizations
+
+
+1.2 Course Introductiion
+
+By end of this course, You'll know how to use Puppet To:
+1. Enforce consistent configurations across all your servers.
+2. Deploy applications as frequently as desired.
+3. Manage all of your application configurations
+4. Spend less time writing, testing, and debugging scripts
+5. Minimize configuration mistakes and downtime
+6. Automate all of it!
+
+Introduction of Puppet
+Installing and Configuring the Puppet Agent
+Creating Manifests and classes
+Building and Using Modules
+Windows Configuration Mangement
+Git
+
+Prerequisite Knolwedge :
+Linux system administration from the shell
+text editing
+SSH
+
+1.3 Puppet Concepts
+-------------------
+PUppet uses a Client-server architecture
+Server is called puppet master
+clients are called nodes
+PUppet master server is Linux server and Puppet master application is Ruby on Railes application
+Nodes can be Linux, Unix and Windows
+Each node run the Puppet Agent
+Puppet Master and Nodes can communicate via SSL over TCP/8140
+Nodes pulls the configuration from Master
+
+Each Individual configuration items are called resource declarations
+A Resource Declaration answer the questions
+-What aspect of the system do we want to manage?
+-What state do we want it in?
+
+Resource Declaration contains
+1. Resource Type
+2. Resource Title
+3. Resource Attributes/Parameters
+4. Resource Provider
+
+Common Resource Type:
+Package
+File
+Service
+
+Package Resource Type : Ensures the ntp package is installed on appserver01
+
+Resource Titile : Uniquely identifies the resource to Puppet
+Unique title per resource type
+
+node 'appserver01' {
+
+package { 'ntp':
+  ensure => 'installed',
+  }
+
+File Resource Type: Creates and populates the file /readme.txt
+
+File { './readme.txt' :
+  ensure => 'present',
+  content => "This file was created by puppet.",
+  }
+
+Resource Attributes :
+Answers the question "What state do we want this resource in?" => Attribute/value pairs are separatedby a"fat comma"
+
+Service Attribute: 
+service { 'ntpd' :
+  ensure => 'running',
+  enable => true,
+ }
+ 
+Resource Providers :
+Perform the heavy lifting of implementing the desired configuration puppet automatically selects the best one
+
+Providerrs for the Package Resource Type
+yum   - RedHat
+apt   - Ubuntu
+Windows - Windows
+
+Configuration Run
+Node - connectionsto puppetmaster - Sends facts about itself(OS, CPU Architecture, Block devices, Network information)
+Puppetmaster - Classifies the node - Compile the catalog (Desired state of each resource, Dependencies) - sends catalog node
+node - applies the catalog - Reports results to master
+
+Cross-train Linux and Windows Administrators
+
+First we'll configure a Puppet Master Server - Then We'll Use Puppet to configure Everything
+
+Puppet Pilot - MediaWiki site for the admins to share knowledge
+it requires Linux, Apache, PHP and MySQL
+CentOS, Ubuntu, Windows Servers to install
+Git - Version and Backup configurations
+
+All systems have internet access
+
+-------------
+1.5 Summary
+------------
+The Need for Configuration Management - Scripts are too unwieldy, time consuming and error-prone
+Why Puppet? - Designed for sys admins, but powerful enough for developers
+Resourcce Abstraction Layer - Allows Puppet to configure different platforms using a single Puppet program
+
+
+ 
+
+
+
+
+
+
+
