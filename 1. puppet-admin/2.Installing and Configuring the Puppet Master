@@ -1,0 +1,275 @@
+2.1 Module Introduction
+-----------------------
+1. Lab Setup
+2. Puppet Master Installation and Configuration
+3. Apache and Passenger installation
+
+2.2 Lab Setup
+-------------
+Puppetmaster - 172.31.0.201
+wiki          - 172.31.0.202 (Centos)
+mediawiki     - 172.31.0.203 (ubuntu)
+winadmin      - 172.31.0.204
+
+Lab Setup Steps :
+Install VirtualBox and Vagrant
+Download CentOS and Ubuntu boxes
+Boot the Puppet Master Server
+
+2.3 Downloading VirtualBox and Vagrant
+-------------------------------------
+Download Virtualbox 
+https://www.virtualbox.org/wiki/Downloads
+
+Download Vagrant
+https://vagranup.com/Downloads
+
+2.4 Download the Centos and Ubuntu boxes
+----------------------------------------
+https://github.com/benpiper/puppet-fundamentals-lab
+
+Install VirtualBox and Vagrant before proceeding
+Remember to reboot after downloading
+
+2.5 Booting the Puppet Master
+-----------------------------
+Adding the CentOS Box to Vagrant
+
+cd puppet-fundamentals-lab
+vagrant box add centos65-base centos65.box
+
+cd puppetmaster
+vagrant up
+vagrant ssh
+
+#Installing Nano, Git and NTP
+sudo yum -y install nano git ntp
+sudo service ntpd start
+sudo chkconfig ntpd on
+
+#check 
+sudo chkconfig ntpd on
+
+#test vm configuration
+hostname
+ifconfig
+
+2.6 Installing the Puppet Master
+-------------------------------
+Tasks : 
+1. Add the Puppet repository
+2. Install the Puppet Server
+
+Add the Puppet repository : Tells the Yum Package Manager where to find the Puppet binaries
+
+sudo yum -y install http://yum.puppetlabs.com/puppetlabs-release-el-6.noarch.rpm
+
+Install the Puppet Server
+sudo yum -y install puppet-server
+
+Check
+puppet master --version
+
+2.7 Setting up Directory environments
+-------------------------------------
+Puppet Loads the Site Manifest by Default
+/etc/puppet/manifests/site.pp
+
+Why Directory Environments? - Allow you to maintain test, development and production environments separately on the same Puppet Master
+
+Tasks :
+1. Create a production environment
+2. Lower the environment
+3. Set DNS alternative names
+
+each environment is managed by the environment configuration file
+/etc/puppet/environments/production/environment.conf
+
+Controls the environment specific settings for the production environment
+
+The Puppet configuration file configure many aspects
+/etc/puppet/puppet.conf
+
+contains 3 sections
+1. Master - master section contains the settings specific to master
+2. Agent - Agent section contains the settings specific to the agent
+3. Main - Main section contains the settings for both master and agent
+
+Example puppet.conf
+[main]
+  logdir = /var/log/puppet
+  rundir = /var/run/puppet
+  ssldir = $vardir/ssl
+[master]
+  environmentpath = $confdir/environments
+  basemodulepath = $confdir/modules:/opt/puppet/share/puppet/modules
+ [agent]
+  classfile = $vardir/classes.txt
+  localconfig = $vardir/localconfig
+
+#Create a directory structure
+sudo mkdir -p /etc/puppet/environments/production/ {modules,manifests}
+
+#verify the structure
+ls /etc/puppet/environments/production
+
+#change to the directory
+cd /etc/puppet/environments/production
+
+ls -la
+
+#Create environment configuration file
+sudo nano environment.conf
+  modulepath = /etc/puppet/environments/production/modules
+  environment_timeout = 5s
+ctrl+x (exit nano)
+
+ls -la
+
+#configure puppet configuration file to use new directory environment
+
+cd /etc/puppet
+
+sudo nano puppet.conf
+
+[main]
+  dns_alt_names = puppet, puppetmaster, puppetmaster.pavan.com
+[master]
+  environmentpath = $confdir/environments
+  basemodulepath = $confdir/modules:/opt/puppet/share/modules
+
+2.8 Puppet Master Security Dealing with SELinux
+-----------------------------------------------
+Tasks :
+1. Set SELinux to permissive mode
+2. Generate certificates
+3. Add firewall rules
+
+Why Set SELinux to Permissive?
+- Facilities troubleshooting :
+  1. Eliminates SELinux as a cause of problems
+  2. Allos you to correct potential problems SELinux would cause if enabled
+ -More secure
+  1. Less likely to needlessly modify configurations while troubleshooting
+
+#Setting SELinux to Permissive Mode : Permissive mode generates an audit log indicating what would have been blocked
+
+sudo setenforce permissive
+sudo sed -i 's\=enforcing\=permissive\g' /etc/sysconfig/selinux
+
+#verify the commands
+sudo getenforce
+sudo cat /etc/sysconfig/selinux
+
+2.9 Puppet Master Security Generating Certificates
+--------------------------------------------------
+Puppet Master Security : Generating Certificates
+
+certficates are used to encrypt traffic between the master and nodes and provides authentication
+
+#Generating Certificates - Done only once on the Puppet Master
+sudo puppet master --verbose --no-daemonize
+
+#verify the certificate
+sudo ls -la /var/lib/puppet/ssl
+
+#regenerate the keyes again
+sudo rm -r /var/lib/puppet/ssl
+
+sudo ls -la /var/lib/puppet/ssl
+
+sudo puppet master --verbose --no-daemonize
+
+2.10 Puppet Master Security Configuring the IPTables Firewalls
+--------------------------------------------------------------
+We need to permit any node to connect to the Puppet Master on port TCP/8140
+
+IPTables COnfiguration : Stored in /etc/sysconfig/iptables
+
+IPTables configuraion :
+Add
+-A INPUT -m state --state NEW -m tcp -p tcp --dport 8140 -j ACCEPT
+
+#Reloading the IPTables Configuration : IPTables must be restarted to apply the new configuration
+
+sudo service iptables restart
+
+2.11 Installing apache and passenger
+------------------------------------
+The Puppet Master runs on Ruby on Rails application
+
+The Puppet master Ships with WEBrick
+1. Rails applications use it as the default web server
+2. Not suitable for production environments
+
+Apache HTTP Server : Accepts connections from puppet nodes
+Phusion Passenger : 
+1. Runs the Puppet Master Ruby application
+2. Integrates with Apache
+
+Tasks :
+1. Install Apache
+2. Install Passenger
+3. Configure the Puppet Master application
+4. Start Apache
+
+sudo yum -y install httpd httpd-devel mod_ssl ruby-devel rubygems gcc gcc-c++ libcurl-devel openssl-devel
+
+#Install Passenger from ruby package manager
+sudo gem install rack passenger
+
+#install apache and passenger module
+sudo passenger-install-apache2-module
+ruby
+copy the test with the lines and put it in notepad
+
+and hit enter to continue
+
+#need to create a directory for puppet master itself
+sudo mkdir -p /usr/share/puppet/rack/puppetmasterd/ {public,tmp}
+
+#Need to copy the default configuration file
+sudo cp /usr/share/puppet/ext/rack/config.ru /usr/share/puppet/rack/puppuetmasterd/
+
+#Need to give file permisstions
+sudo chown puppet:puppet /usr/share/puppet/rack/puppetmasterd/config.ru
+
+#verify
+ls -la /usr/share/puppet/rack/puppetmasterd/config.ru
+
+
+
+
+
+
+
+
+
+
+
+
+
+  
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
