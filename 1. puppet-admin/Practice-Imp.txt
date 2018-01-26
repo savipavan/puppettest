@@ -1,0 +1,393 @@
+Puppet Fundamentals
+===================
+2.5 Booting the Puppet Master Server
+
+#add centos box
+vagrant box add centos65-base centos65.box
+
+#Boot the puppet master server
+Change it to directory
+
+vagrant up
+vagrant ssh
+
+#verification
+vagrant box list
+
+#Install admin tools
+sudo yum -y install nano git ntp
+sudo service ntpd start
+sudo chkconfig ntpd on
+
+# 2.6 Installing the Puppet Master
+
+#Add the puppet repository
+sudo yum -y install https://yum.puppetlabs.com/puppetlabs-release-el-6.noarch.rpm
+
+#Install PUppet server
+sudo yum -y install puppet-server
+
+puppet master --version
+3.7.3
+
+# 2.7 Setting up Directory environments
+
+Puppet loads the Site Manifest by Default from below location
+/etc/puppet/manifests/site.pp
+
+Why Directory Environments?: Allow you to maintain test, development and production environments separately on the same puppet master
+
+Task 1 : Create a Production environments
+Task 2: Lower the environment timeout
+Task 3 : Set DNS Alternative names
+
+Each environment is controlled by environment.conf file
+/etc/puppet/environment/production/environment.conf
+
+Puppet configuration file controls many aspect and would be placed in below location
+
+/etc/puppet/puppet.conf
+
+File containes 3 settings
+master, main and agent
+
+[main]
+	logdir = /var/log/puppet
+	rundir = /var/run/puppet
+	ssldir = $vardir/ssl
+[master]
+	environmentpath = $confdir/environemnts
+	basemodulepath = $confdir/modules:/opt/puppet/share/puppet/modules
+[agent]
+	classfile = $vardir/classes.txt
+	localconfig = $vardir/localconfig
+
+#create directory environment
+sudo mkdir -p /etc/puppet/environments/production/{modules,manifests}
+
+#verify listing
+ls -la /etc/puppet/environments/production
+
+#go production folder
+cd /etc/puppet/environments/production
+
+#Create environment.conf file and modified with below content
+sudo nano environment.conf
+	modulepath = /etc/puppet/environments/production/modules
+	environment_time = 5s
+#modify the puppet configuration file to use this directory
+cd /etc/puppet
+
+sudo nano puppet.conf
+
+dns_alt_names = puppet, puppetmaster
+
+[master]
+	environmentpath = $confdir/environemnts
+	basemodulepath = $confdir/modules:/opt/puppet/share/modules
+	
+2.8 Puppetmaster Security Dealing with SELinux
+#set SELinux Permissive mode
+sudo setenforce permissive
+
+sudo sed -i 's\=enforcing\=permissive\g' /etc/sysconfig/selinux
+
+sudo cat /etc/sysconfig/selinux
+
+2.9 Puppet Master Security Generating Certificates
+sudo puppet master --verbose --no-daemonize
+
+#verification
+sudo ls -la /var/lib/puppet/ssl
+
+#if we want to regenerate the cerfification
+rm -rf /var/lib/puppet/ssl
+
+#regenerate the certificate
+sudo puppet master --verbose --no-daemonize
+
+2.10Puppet Master Security Configuring the IPTables Firewalls
+
+service iptables stop  
+chkconfig iptables off  
+
+service ip6tables stop  
+chkconfig ip6tables off 
+
+version 7 of CentOS
+
+#Check status:
+
+systemctl status firewalld
+
+#Stop firewall:
+
+systemctl stop firewalld
+
+#Disable firewall:
+
+systemctl disable firewalld
+
+2.11 Install apache and passenger
+for puppet scalable and puppet ready require 2 pieces - apache and passenger
+the puppet master is ruby on rails application
+
+Puppet master ships with webrick : Rails applications use it as the default web server. Not suitable for production environemnts
+
+Apache HTTP Server : Accepts connections from Puppet Nodes
+
+Phusion Passenger : Runs the puppetmaster ruby application. Inegrates with Apache
+
+Task 1: Install apache
+
+sudo yum -y install httpd httpd-devel mod_ssl ruby-devel rubygems gcc gcc-c++libcurl-devel openssl-devel
+
+Task 2 : Install Passenger
+
+sudo gem install rack passenger
+
+Task 3: configure the puppetmaster application
+Task 4: Start apache
+
+<<<<didn't worked for me>>>>>>
+
+******************************
+3.2 Lab Setup
+
+#Add the Ubuntu Box to Vagrant
+change the wiki folder
+vagrant box add trusty65 trusty-server-cloudimg-amd64-vagrant-disk1.box
+
+#Boot the wiki and wikitest servers
+go the directories and type 
+vagrant up
+
+#Add Puppet Master to hosts file
+sudo -i
+echo 172.31.0.201 puppetmaster >> /etc/hosts
+
+
+
+3.6 Installing the Puppet Agent on CentOS
+#Add the puppet repository
+sudo yum -y install https://yum.puppetlabs.com/puppetlabs-release-el-6.noarch.rpm
+
+#Install PUppet server
+sudo yum -y install puppet
+
+sudo yum -y install nano
+
+#modify the puppet agent configuration file to tell the puppet master
+/etc/puppet/puppet.conf
+
+sudo nano /etc/puppet/puppet.conf
+[agent]
+	server = puppetmaster
+
+#Generate Certificates
+sudo puppet agent --verbose --no-daemonize --onetime
+
+sudo nano /etc/sysconfig/iptables
+	-A INPUT -m state --state NEW -m tcp -p
+sudo service iptables restart
+
+*******************
+3.7 Installing the Puppet Agent on Ubuntu
+wget https://apt.puppetlabs.com/puppetlabs-release-trusty.deb
+
+sudo dpkg -i puppetlabs-release-trusty.deb
+
+sudo apt-get update
+
+sudo apt-get install puppet
+
+#Setting the Puppet Master in /etc/puppet/puppet.conf
+[agent]
+	server = puppetmaster
+	
+#enable puppet agent
+sudo puppet agent --enable
+
+sudo puppet agent --verbose --no-daemonize --onetime
+
+#3.8 Signing Agent Certificates
+sudo puppet cert list
+
+sudo puppet cert sign wiki
+
+sudo puppet certi sign wikitest
+
+#Testing
+
+run below command in wiki server
+sudo puppet agent --verbose --no-daemonize --onetime
+
+<<<by default puppet agent will be disabled after installation>>>
+
+**********************************************************
+4.1. Module Introduction
+
+Elements of Puppet Manifest -  Node Definitions, Resource Declarations, Variables and Classes
+
+#creating nodes.pp manifest stored in /etc/puppet/environment/production/environment/production/manifests/
+
+Puppet automatically loads all .pp file in the manifests directory
+
+4.2 <<Optional>>
+Adding syntax Highlighting to nano
+
+cd ~
+git clone https://gitbub.com/benpiper/puppet-nano
+sudo cp puppet-nano/puppet.nanorc /root/.nanorc
+
+4.3 Node Definitions
+#create nodes.pp in production environment
+
+sudo nano /etc/puppet/environemnts/production/manifests/nodes.pp
+
+node 'wiki' {
+
+}
+
+node 'wikitest' {
+
+}
+
+*********
+4.4 Managing Files
+
+Goal : Create a simple text file on each Puppet node that says,"Created by Puppet" followed by a timestamp
+
+file {'/info.txt':
+	ensure => 'present',
+	content => inline_template("Created by Puppet at <%=Time.now %>\n"),
+}
+
+#run the wiki agent
+puppet agent --verbose --no-daemonize --onetime
+
+************
+4.5 The Client File Bucket
+Before puppet modifies/delete the file. it stores the old copy of the file called the client filebucket
+
+Stored in the node in /var/lib/puppet/clientbucket by default
+
+<<try restore the file from hash>>
+inorder to  restore we need to know the hash. if we dont have this with us. we can get this has from /var/log/messages
+
+sudo tail /var/log/messages
+
+#to restore the file
+sudo puppet filebucket -l --bucket /var/lib/puppet/clientbucket restore /info.txt <<need to put the hash>>c62004ae89cd16e305744a35f57d8a24
+
+[root@wiki vagrant]# sudo puppet filebucket -l --bucket /var/lib/puppet/clientbucket/ restore
+/info.txt ebb1fc27c08d1c15d29737767e9f11c4
+
+#verify the file
+sudo cat /info.txt
+
+#Instead of restoring the original file if we want to view it
+sudo puppet filebucket -l --bucket /var/lib/puppet/clientbucket/ get <<need to put the hash>>c62004ae89cd16e305744a35f57d8a24
+
+***************
+4.6 Managing Packages
+
+package { 'ntp':
+	ensure => install,
+}
+
+write the above code on both node definitions
+
+#test the ntp package in centos 
+sudo yum info ntp
+
+#test the ntp package is installed on ubuntu
+ls /usr/sbin/ntpd -la
+
+sudo puppet agent --verbose --no-daemonize --onetime
+
+**********
+4.7 Managing Services
+#Constructing Service Resource Declarations 
+
+#CentOS
+	service {'ntpd':
+		ensure => 'running',
+		ensure => true,
+	}
+
+#on Ubuntu
+	service {'ntp':
+		ensure => 'running',
+		enable => true,
+	}
+
+#verify the service whether it is running on centos
+sudo service ntpd status
+
+#verify the service whether it is running on ubuntu
+sudo service ntpd stop
+sudo service ntpd status
+
+#Test by removing completely from server and rerun the agent
+sudo apt-get remove ntp
+ls /usr/sbin/ntpd
+
+#verify it on centos server
+sudo yum remove ntp
+sudo service ntp status
+
+****************
+4.8 Selectors
+
+A selector assigns one of a set of possible values to a variable based on a condition
+
+$ntpservice = $osfamily ? {
+	'redhat' => 'ntpd',
+	'debian' => 'ntp',
+	default => 'ntp',
+	}
+
+Using a Selector Variables
+Replace :
+
+service { 'ntpd':
+	ensure => 'running',
+	enable => true,
+	}
+
+With :
+
+service { '$ntpservice':
+	ensure => 'running',
+	enable => true,
+	}
+
+#To validate manifest
+sudo puppet parser validate nodes.pp
+
+#uninstall ntp package again on centos
+sudo yum remove -y ntp
+
+#run agent on both centos and ubuntu
+
+************
+4.9 Classes
+
+Puppet Class =/=object oriented class
+
+Def : Puppet Class = A named collection of resource declarations, variables, selectors, or any other Puppet code
+
+Advantage : write once and reuse
+
+class linux {
+	package { 'ntp':
+		ensure => 'installed',
+	}
+}
+
+node 'wiki' {
+	{ class 'linux' :}
+}
+
+
