@@ -145,8 +145,34 @@ class linux {
   }
  
  node wiki { 
-  { include 'linux': }
+  class {'linux': }
  }
+
+Add the above declartion to both wiki and wikitest servers in nodes.pp
+Run the agent on both wiki and wikitest
+
+4.10 Variables
+--------------
+class linux {
+
+  $admintools = ['git', 'nano', 'screen']
+  
+  package { $admintools:
+    ensure => 'installed',
+  }
+ 
+Add the above declartion to both wiki and wikitest servers in nodes.pp
+Run the agent on both wiki and wikitest
+
+4.11 summary
+--------------
+There are no "best practices", but there are common patterns
+Many patterns are common sense
+
+package/service/file pattern - The most common pattern in Puppet
+removing a resource declartiion will not undo it
+use ensure => 'absent' to uninstall a package
+
 
 
 
