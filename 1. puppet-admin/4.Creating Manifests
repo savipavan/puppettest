@@ -1,0 +1,166 @@
+4.1 Module Introduction
+----------------------
+Creating first manifest
+
+Elements of a puppet manifest
+1. Node definitions
+2. Resource declarations
+3. Variables
+4. Classes
+
+The nodes.pp Manifest
+stored in /etc/puppet/environments/production/manifests
+Puppet automatically loads all .pp files in the manifest directory
+
+4.2 Adding syntax Highlighting to Nano
+--------------------------------------
+cd ~
+git clone https://github.com/benpiper/puppet-nano
+sudo cp puppet-nano/puppet.nanorc /root/.nanorc
+
+4.3 Node Definitions
+--------------------
+#Creating teh nodes.pp manifest
+sudo nano /etc/puppet/environments/production/manifests/nodes.pp
+
+node 'wiki' {
+
+}
+
+node 'wikitest' {
+
+}
+
+4.4 Managing Files
+------------------
+#Constructing a File Resource Declaratiion
+
+file { '/info.txt' :
+  ensure => 'present'
+  content => inline_template("Created by Puppet at <%=Time.now %>\n"),
+  }
+
+#on wiki server
+sudo puppet agent --verbose --no-daemonize --onetime
+
+verify
+cat /info.txt
+
+4.5 The Client FileBucket
+-------------------------
+The Client Filebucket is stored in the node in
+/var/lib/puppet/clientbucket by default
+
+#on wiki
+Inorder to restore the file, we need to know the hash
+
+sudo tail /var/log/messages
+
+#restore
+sudo puppet filebucket -l --bucket /var/lib/puppet/clientbucket restore /info.txt "copy the first hash"
+sudo cat /info.txt
+
+#view instead of view it
+sudo puppet filebucket -l --bucket /var/lib/puppet/clientbucket/ get "copy the first hash"
+
+4.6 Managing Packages
+---------------------
+#Constructing a Package Resource Declaration
+package { 'ntp' :
+  ensure => 'installed',
+  }
+ 
+Add the above declartion to both wiki and wikitest servers in nodes.pp
+Run the agent on both wiki and wikitest
+
+#verify the ntp package installation
+#on wiki
+sudo yum info ntp
+
+#on wikitest
+ls /usr/sbin/ntpd -la
+
+4.7 Managing Services
+---------------------
+Constructing Service Resource Declarations
+
+#on wiki node declaration
+
+service { 'ntpd':
+  ensure => 'running',
+  enable => true,
+ }
+ 
+ #on wikitest node declaration
+
+service { 'ntpd':
+  ensure => 'running',
+  enable => true,
+ }
+
+#verify the service 
+#stop the service in wikitest
+sudo service ntp status
+
+#remove ntp from wikitest
+sudo apt-get remove ntp
+
+4.8 Selectors
+-------------
+Constructing a Selector : A selector assigns one of a set of possible values to a variable based on a condition
+
+$ntpservice = $osfamily ? {
+  'redhat' => 'ntpd',
+  'debian' => 'ntp',
+  'default' => 'ntp',
+ }
+
+Using a Selector Variable
+
+Replace :
+service { 'ntpd' :
+  ensure => 'running',
+  enable => true,
+ }
+ 
+With :
+service { '$ntpservice:
+  ensure => 'running',
+  enable => true,
+ }
+
+Add the above declartion to both wiki and wikitest servers in nodes.pp
+Run the agent on both wiki and wikitest
+
+4.9 Classes
+-----------
+Puppet Class : A names collection of resource declarations, variables, selectos, or any other puppet code
+
+Class Definition and Usage
+
+class linux {
+  package { 'ntp' :
+    ensure => 'installed',
+   }
+  }
+ 
+ node wiki { 
+  { include 'linux': }
+ }
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
