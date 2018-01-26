@@ -1,0 +1,17 @@
+3.1 Installing and Configuring the Puppet Agent
+-----------------------------------------------
+
+Installing agent on centos and ubuntu
+Tasks
+1. Boot wiki and wikitest servers
+2. Install and Configure Puppet Agent
+3. Sign agent certificates
+
+3.2 Lab Setup
+-------------
+
+1. Add the ubuntu box to Vagrant
+2. Boot wiki and wikitest servers
+3. Add Puppet Master to hosts file
+
+3.3 Adding the Ubuntu Box to Vagrant
