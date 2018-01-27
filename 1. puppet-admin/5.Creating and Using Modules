@@ -1,0 +1,192 @@
+5.1 Module introduction
+-----------------------
+what if we want to manage something that doesn't have a built-in resource type?
+
+IPtables configuration | stored /etc/sysconfig/iptables
+Manaing the IPTables Firewall
+firewall { '000 allow http access' :
+  port => '80',
+  proto => 'tcp',
+  action => 'accept',
+ }
+
+Mediawiki requirements
+apache http server
+mysql
+php
+mediawiki application files
+
+lab steps:
+1. Create a custom mediawiki module
+2. use and test
+3. Download modules from the Puppet Forge
+4. Incorporate modules into Media wiki module
+
+5.2 The Puppet Forge
+--------------------
+https://forge.puppetlabs.com
+
+5.3 Creating Modules:
+--------------------
+Creating the Mediawiki module
+cd /etc/puppet/environments/production/modules/
+sudo puppet module generate yourname-mediawiki --environment production
+sudo mv yourname-mediawiki mediawiki
+
+5.3 Module structure
+--------------------
+Module directory contains 7 folders inside the module folder
+-modulename
+  1. manifests
+  2. files
+  3. templates
+  4. lib
+  5. facts.d
+  6. tests
+  7. spec
+ 
+The manifests Directory:
+- contains an init.pp manifest that is automatically loaded
+  class mediawiki {
+  
+  }
+ 
+ the Files Directory:
+ - contains static files
+ 
+ The templates Directory
+ - contains files with mixed static and dynamic content
+ - Dynamic content modified based on custom variables and facts
+
+The lib Directory
+- contains custom facts - custom facts require ruby coding knowledge
+
+The facts.d Directory
+- contains external facts - Do not require Ruby coding buut can use any script or executable to generate facts.
+
+The tests and spec Directories
+-Used for unit testing
+- require knowledge of Ruby on Rails Development
+
+5.5 Customizing modules
+-----------------------
+php-mysql
+
+Ubuntu : php5-mysql
+centos : php-mysql
+
+installing php-mysql using a selector
+
+$phpmysql = $osfamily ? {
+  'redhat' => 'php-mysql',
+  'debian' => 'php5-mysql',
+  default => 'php-mysql',
+ }
+
+package { $phpmysql:
+  ensure => 'present',
+  }
+
+Invoking the mediawiki class
+
+  class { 'mediawiki' : }
+
+#on puppet master
+sudo nano init.pp
+
+class mediawiki {
+
+  $phpmysql = $osfamily ? {
+    'redhat' => 'php-mysql',
+    'debian' => 'php5-mysql',
+    default  => 'php-mysql',
+
+}
+
+package { $phpmysql:
+    ensure => 'installed',
+}
+}
+
+#open the nodes.pp manifest
+#under each node definition invoke mediawiki class
+
+node 'wiki' {               
+                            
+    class {'linux': }       
+    class { 'mediawiki': }  
+}                           
+node 'wikitest' {           
+                            
+    class {'linux': }       
+    class { 'mediawiki': }  
+                            
+}                           
+
+#run agent on both wiki and wikitest servers
+
+5.6 Conditionals
+----------------
+Installing PHP-XML using a Conditional
+
+sudo nano init.pp
+
+if $osfamily == 'redhat' {
+  package { 'php-xml' :
+    ensure => 'present',
+   }
+  }
+ 
+#run the agent again on wiki server
+
+5.7 Downloading from the Puppet Forge
+-------------------------------------
+https://forge.puppetlabs.com
+
+5.8 The Apache Module
+---------------------
+search for apache
+
+#on master
+
+sudo puppet module install puppetlabs-apache --modulepath /etc/puppet/environments/production/modules
+
+sudo nano init.pp
+
+class { '::apache':
+  docroot => '/var/www/html'<
+  mpm_module => 'prefork',
+  subscribe => Package[$phpmysql],
+  }
+ 
+ class { "::apache::mod::php': }
+ 
+ save the manifest and run the puppet agent on wiki
+ 
+ #test
+ check the apache service
+ 
+ sudo service httpd status
+ 
+ #uninstall apache and re-run the agent
+ sudo yum -y remove httpd
+ 
+ 
+ 
+ 
+
+
+
+
+
+
+
+
+ 
+ 
+ 
+ 
+
+
+
+
