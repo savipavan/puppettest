@@ -1,0 +1,17 @@
+2.1 Welcome to Hiera. the single source of Truth
+------------------------------------------------
+Module overview
+-Lab env
+  192.168.56.1 - centos
+  192.168.56.15 - centos7
+  192.168.56.16 - ubunut14.04
+ 
+ Puppet 4 Services : Learn how to abstract from puppet code :
+ Means : Without modification to the Puppet code or passing parameters to classes, hiera provides a lookup data-source. Enabling custom values to be retrieved from configuration data rather than within the code.
+ --Download the ntp_start.tgz to your home directory --> Move into the /etc/puppetlabs/code environments/production/modules directory --> Expand the archive with sudo tar -xzvf ~ntp_start.tgz
+ 
+ #run puppet apply
+ sudo puppet apply -d -e 'include ntp'
+ sudo puppet apply -d -e 'include ntp' | grep hiera
+ 
+ 
