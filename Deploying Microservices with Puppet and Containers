@@ -1,0 +1,39 @@
+Puppet Master / Agent Architecture
+---------------------------------
+Managing Infrastructure
+Puppet Master -- Compile Catalog
+Puppet Agent -- Applies Catalog
+Configuration Management/Configuration Drift
+Centralized Reporting and Inventory
+
+Benefits : 
+  Reporting Aggregation
+  Redundancy And Scalability
+ 
+ Puppet Stand-Alone Architecture
+ -------------------------------
+ -No Puppet Master and Accompnaying
+ - Simple "Puppet Apply" exceution
+ - Local catalog compliation and application
+ - Lower setup overhead
+    - Ephemeral Environments
+  
+  puppet apply -e "include <class>"
+  
+  puppet apply <file>.pp
+  
+  puppet apply --hiera-config /etc/puppet/hiera.yaml
+  
+  Puppet Apply with Docker
+  -----------------------
+  - Puppet Apply is invoked from the Dockerfile
+  - Docker container is ephermeral
+  - common infrastructural components can still be leveraged
+  - r10k is used to install the Puppet Module set required for the configuration of the Docker container
+  - Hiera contains all of the static configuration for the container
+  
+  puppet apply --modulepath /etc/puppet/modules --hiera-config /etc/puppet/hiera.yaml
+  
+  2.2 Setting Up the Environment
+  ------------------------------
+  
