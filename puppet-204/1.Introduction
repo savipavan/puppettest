@@ -1,0 +1,185 @@
+-What are common issues managing traditional infrastructure?
+ - Provisioning of new nodes(servers)
+ - Configuring nodes is time consuming
+ - managing configuraiton drift
+ - using custom scripts is not a solution
+ - so many servers so little system administrators.
+ 
+ What is Puppet?
+  - Software Configuration Management tool - system engineering practice able to matain consistency across multiple OS
+  - Define a configuration once and apply it to thousands of nodes
+  - Remediate configuration drift
+  - Get details about your hardware and software configurations
+  - orchestrate change to thousands of nodes
+  - The Puppet's language is declarative
+  - Puppet code is written to express desired end state of the node
+  - Management of node resource are abstracted from the operating system
+  - Code is written inside of classes, classes are assigned to nodes
+  - Puppet was founded by Luke Kanies in 2005
+
+More about Puppet
+ - The Puppet Forge (forge.puppet.com)
+ - PXE boot provisioning using Razor
+ - Testing Puppet Code with RSpec
+ - Serverspec testing with Beaker(Live Testing)(interface with Openstack, AWS and Docker)
+ - Extend Puppet Modules with Ruby(custom types and provides)
+ 
+ 1.4 About this course
+ --------------------
+ - Course Author : Travis N. Thomsen, Puppet Certified
+ - This course will focus on:
+  - Puppet Enterprise 2016.2
+    - Core concepts as they related to Puppet Enterprise
+    - Installing and Configuring the Puppet Master and Agent nodes
+    - Learn the Puppet DSL by utlizing lab servers
+    - Lean how to create component Puppet Modules
+      - SSH
+      - MOTD
+      - Apache
+   - Using roles and profiles for resusability
+   - How to manage data with Hiera
+   - Deploying Puppet Modules with code Manager
+   - Node classification
+   - Managing your Puppet Infrastructure
+   - The Fundamentals required for the system administration Using Puppet certification
+   
+  
+  Current Certification : Version: Open source Puppet 4.5.2 or later, and Puppet Enterprise 2016.4 and later
+  https://puppet.com/support-services/certification/professional-overview-2016
+  
+  
+  1.5 puppet head first
+  ---------------------
+  #edit /etc/hosts file
+  
+  echo 192.168.14.4 puppetmaster >> /etc/hosts
+  
+  #Download and install Puppet Enterpriser
+  wget https://pm.puppetlabs.com/puppet-enterprise/2016.4.2/puppet-enterprise-2016.4.2-el-7-x86_64.tar.gz
+  
+  #once you download unzip the file  
+  tar xvzf puppet-enterprise-2016.4.2-el-7-x86_64.tar.gz 
+  
+  #Monolithic installation
+  
+  #502 Gateway problem when opening console
+  
+  cd /usr/lib/systemd/system
+  
+  ls | grep "pe-"
+  
+  #Stop Puppet DB first
+  service pe-puppetdb stop
+  # Stop Puppet PE-puppet server
+  service pe-puppetserver stop
+  #stop pe-console service
+  service pe-console-services stop
+  
+  #start the services again with the same order
+  
+  
+  #pe.conf file
+  
+  cd /etc/puppetlabs/enterprise/conf.d/
+  
+  cp pe.conf /root/
+  
+  Once you installed - start the console
+  
+  #configure agent node configured
+  copy URL from console --> node classification
+  
+  # on puppet master list certificates
+  puppet cert list
+  
+  #run puppet agent on node
+  puppet agent -t
+  
+  
+  #open forge.puppet.com
+  search for ntp
+  
+  and install module in puppet master
+  
+  puppet module install puppetlabs-ntp --version 6.0.6
+  
+  #check in modules directory
+  cd /etc/puppetlabs/code/environments/production
+  
+  #check in manifest directory
+  cd manifests
+  
+  vi site.pp
+  
+  modify default node settings
+  include ntp
+  
+  #run agent on both puppet master and node
+  puppet agent -t
+  
+  
+  1.6 Puppet Enterprise Stack and Core concepts
+  ---------------------------------------------
+  Agent components (On all Nodes)
+  - Puppet Agent is software used to communicate with puppet master to execute a puppet run.
+  - Puppet is the core of our configuration management platform. it consists of a special programming language for describing desired system states, an agent that can enforce desired states, and several other tools and services
+  - Facter is system profiling tool. Puppet Agent uses it to send important system info to puppet Server, which can access that info when compiling that node's catalog.
+  - Hiera is hierarchical data lookup tool. You can use it to configure your puppet classes.
+  - Mcollective (Marionette Collective) is a framework for building server orchestration or parallel job-execution systems.
+  - Puppet Server is the JVM application that provides Puppet's core HTTPS services. when Puppet Agent checks in to request a configuration catalog for a node, it contacts Puppet Server.
+  - Puppet DB collects the data Puppet Generates and offers a powerful query API for analyzing that data. it's foundation of the PE console, and you can also use the API to build your own applications.
+  - R10k is a code management tool that allows you to manage your environmental configurations(such as production., testing and developement) in a source control repository.
+  - Razor Server - is a PXE boot provisioning application that deploys bare-metal systesms.
+  - PostgreSQL is ann open source relational database management system used by PuppetDB.
+  - ActiveMQ is the message broker used by MCollective.
+  - Nginx is the web server used by the Puppet Enterprise Console.
+  - COnsole puppet enterprise's web interface.
+ 
+ Puppet Enterprise Client Tools :
+  - Puppet Orchestrator allows you to control the rollout of changes in your infrastrure and provides the interface to the Puppet Application orchestration service.
+  - Puppet Access is a tool used to authenticate yourself to the PE RBAC token-based authentication service so that you can use other capabilities and APIs.
+  - Code Manager provides the interface for the code Manager and file sync services.
+  - PuppetDB CLI is a tool for working with PuppetDB, such as building queries and handling exports.
+ 
+ Puppet Master vs,Puppet Server vs PUppet Master Server
+ 
+ 1. Puppet Master - is a Ruby application that compiles configurations for any number of Puppet Agent nodes, using puppet code and various other data sources.
+ 2. Puppet Server - is an application that runs on the Java Virtual Machine(JVM) and provides the same services as the classic puppet master application.
+ 3. Puppet Master server(puppet master) is the server that performs that catalog compile.
+ 
+ What is a Catalog?
+ - When a node checks into the PUppet master server it retrieves a document called catalog. The Catalog describtes the desired state of the node being managed. it may also specify dependency information for the resources that should be managed in a certain order. This is essentially a compiled version of the DSL and is compiled on the Puppet master and stored in PuppetDB.
+ 
+ Why is it used?
+ - separate privileges
+ - Reduce the agent's resource consumption
+ - simulate changes
+ - record and query configurations.
+ 
+ - Puppet Process:
+  - install puppet enterprise master and agents
+  - create configurations(modules/classes) that describe a resources end state
+  - Assign configurations to nodes(declaring a class)
+   - Configurations can be assigned in the console.
+   - configurations can be assigned in the site.pp file
+   - configurations can be assigned in your Hiera data
+   
+   1.7 - Nodes
+   -------------
+   Puppet Nodes(Agents)
+   - Nodes are virtual, physical or non-ephemeral cloud systems.
+   - Runs the Puppet Agent
+   - Required Ports :
+    - 8140 - for the PUppet agent
+    - 61613 for MCollective
+   
+  
+ 
+  
+  
+  
+  
+  
+  
+  
+    - 
