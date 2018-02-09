@@ -1,0 +1,43 @@
+2.1 Hiera single source of truth
+- Lab environment
+- Pluralsight courses
+- course content
+
+Lab environment
+ - Centos 7.2 KVM 192.168.56.1
+ - Centos7 192.168.56.15
+ - ubuntu 14.04 192.168.56.16
+
+This course follows on from the Puppet 4: Working with files and templates courses. In this course you will learn to add Hiera to Puppet to abstract Puppet code from the implementation.
+
+Means : Without modification to the Puppet code or passing parameters to classes, Hiera provides a lookup data-source. Enabling custom values to be rettrieved from configuration data rather than within the code.
+
+2.2 Demonstration Hiera Lookups
+- Download the ntp_start.tgz to your home directory
+- Move into the /etc/puppetlabs/code environments/ production/modules directory
+- Expand the archive with sudo tar -xzvf ~/ntp_start.tgz
+
+sudo puppet apply -d -e 'include ntp' 
+
+sudo puppet apply -d -e 'include ntp' | grep hiera
+
+Hiera configuration, Data Sources, Hiera Tools, Debugging Hiera, Refactering NTP Module
+
+Configuration : The Hiera configuration file is often known as the hiera.yaml file. The file is used to configure the hierarchy of backends to be used for lookups
+Backends : Can be written in yaml or json formats
+Lookup Functions:
+ - hiera() - lookup for single value
+ - hiera_array() - lookup for multiple values
+ - hiera_hash() - index array from we can use
+ 
+Automatic Parameter Lookup: Puppet automatically retrives class parameters from Hiera. This is regular and predictable and anyone downloading a module can reference the first line of a class to determine the keys that need to be set.
+
+Summary :
+
+3.1 Getting started with Hiera
+------------------------------
+
+
+
+
+
