@@ -219,6 +219,32 @@ sudo puppet resource user fred
 
 Next Module : Working with Puppet Apply and Manifests
 
+4.1 Working with Puppet Apply and Manifests
+-------------------------------------------
+Objectives :
+ - What are Puppet Manifests
+ - Using Puppet Apply
+ - Ensure Puppet Agent is stopped and disabled
+ - Puppet Style guide
+ - Syntax highlighting and styling in vim
+
+Puppet Manifests : 
+ - Text files with .pp suffix
+ - Contain puppet code
+ - puppet server and agent architecture - site.pp
+ - puppet modules - init.pp
+ 
+Hellow World : The notify resource type can be used to send a message to the agent log or screen if being used interactively. This makes a great and simple.
+
+notify { 'Hellow World': }
+
+validate the Manifest : Although this manifest is very simple we should get in the habit of validating code as we create it. Helping to keep our code robust and healthy.
+
+sudo puppet parser validate helloworld.pp
+
+Creating a Manifest file.
+
+
 
 
 
