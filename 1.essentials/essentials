@@ -1,0 +1,114 @@
+2.1  Introducing Puppet
+	- Installing Puppet 4
+	- Puppet apply
+	- Understanding Resources
+	- Exposing the Language
+	- Resource Relationships
+	- Testing and Validation
+
+3.1 Installing the Puppet Client
+	- Who are PuppetLabs
+	- Create PuppetLabs repositories
+	- Install the Puppet AIO Client
+	- Locate important Puppet Files and Directories
+	- Running Puppet with and without sudo
+
+#Centos
+----------
+# id
+
+# sudo yum install -y http://yum.puppetlabs.com/puppetlabs-release-pc1-el-7.noarch.rpm
+
+# yum repolist
+
+#ubuntu
+-----------
+
+# wget https://apt.puppetlabs.com/puppetlabs-release-pc1-trusty.deb
+
+# id 
+
+# sudo dpkg -I puppetlabs-relase-pc1-trusty.deb
+
+# sudo apt-get update
+
+3.4 Installing the Puppet Agent
+-----------------------------------------
+# sudo yum install puppet-agent  - CentOS
+
+# sudo apt-get install puppet-agent  --Ubuntu
+
+Check 
+
+# ls -l /opt/puppetlabs/bin
+
+3.5 Understanding the File locations - Binary locations
+------------------------------------------------------------------------
+A subset of executables are available in : /opt/puppetlabs/bin. This is added to the PATH variable.
+
+Other executables are in /opt/puppetlabs/puppet/bin. This is not in the PATH and makes it less likely these programs will be used in error.
+
+Main Configuration directory is : /etc/puppetlabs/puppet. The main configuration files is puppet.conf - This makes Puppet Open Source now consistent with Puppet Enterprise
+
+Displaying Data
+
+#puppet agent --version
+#puppet config print
+#puppet config print confdir
+#puppet config print certname
+#puppet config print { confdir rundir ssldir runinterval }
+
+#cat /etc/profile.d/puppet-agent.sh
+
+Copy 'export PATH=$PATH:/opt/puppetlabs/bin' --> paste in to terminal
+
+3.7 Gaining Administrative Rights
+--------------------------------------------
+Plain User: Different configuration path
+Su: Need to know the root password
+Sudo: need to update the secure_path
+
+#sudo visudo
+
+Search for /secure_path
+
+Apend by presssing A
+Secure_path = /sbin:/bin:/usr/sbin:/usr/bin:/opt/puppetlabs/bin
+
+#Sudo puppet resource user pavan
+
+If we wanted to chanage properties of pavan
+
+#Sudo puppet resource user pavan --edit
+
+3.8 Summary
+-----------------
+ - Puppetlabs founded 2005
+	- Puppet 4 uses puppet collections
+	- Puppet-agent
+	- PATH: /opt/puppetlabs/bin
+	- Collections : /opt/puppetlabs/puppet/bin
+	- Sudo: secure_path
+
+4.1 Introducing Puppet Manifest
+-------------------------------------------
+Working with Puppet Apply and Manifest
+  -  what are puppet manifests
+	- Using puppet apply
+	- Ensure Puppet Agent is stopped and disabled
+	- Puppet Style guide
+	- Syntax highlighing and styling in vim
+
+Puppet Manifests :
+ - text files with .pp suffix
+	- Contain puppet code
+	- Site.pp
+	- Init.pp
+
+	- HelloWorld manifest file
+		Notify { 'Hello World': }
+	- Save the file with .pp extension
+	
+-- validate the manifest
+ #sudo puppet parser validate helloworld.pp
+
