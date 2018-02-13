@@ -111,4 +111,356 @@ Puppet Manifests :
 	
 -- validate the manifest
  #sudo puppet parser validate helloworld.pp
+ 
+ 4.3  Looking into Puppet Apply:
+Puppet Architecture:
+
+Puppet-agent : Runs on clients and send facts to the server.
+Puppet-Server : Collects facts from agents and compiles a catalogue for the agents to apply.
+
+Puppet apply: A combination of puppet agent and puppet server allowing the client to run in a standalone mode.
+	We can use the application puppet apply to enforce a local manifest or puppet code.
+	
+#sudo puppet apply helloworld.pp
+#sudo puppet apply -e "notify { 'Hello World': }
+
+Controlling the Agent:
+	We currently do want to use the Puppet Agent. This can run as a daemon service so we should check that if it is both stopped and disabled.
+
+#sudo puppet resource service puppet
+
+##Create a minifest with the above command
+#sudo puppet resource service puppet > puppet-service.pp
+
+#sudo puppet parser validate puppet-service.pp
+#sudo puppet apply puppet-service.pp
+
+#systemctl start puppet
+
+#scp puppet-service.pp root@192.168.56.16:
+
+Run puppet apply on ubuntu
+
+4.5 The Puppet Style Guide
+------------------------------------
+Most languages have their recommended style guide. The way the code should be laid out. The full guide is in the documentation:
+https://docs.puppet.com/guides/style_guide.html
+
+IDE: IDEs or Integrated Design Environments can help with styling. We use the text editor VIM in this course. Even this though can help with styling. It is easiest to install the required elements using a puppet Module.
+
+# sudo puppet module install theurbanpenguin/puppet_vim
+
+Include puppet_vim
+
+#sudo puppet parser validate puppet-vim.pp
+#sudo puppet apply puppet-vim.pp
+
+4.6 Applying Style with Vim
+-------------------------------------
+# vim user.pp
+
+User { 'u1':
+  managehome => true,
+  uid => '2002',
+  ensure => 'present',
+}
+Quit without saving
+
+#sudo puppet module list
+
+#sudo puppet module install theurbanpenguin/puppet_vim
+
+#sudo puppet module list
+#sudo puppet apply -e "include  puppet_vim"
+
+Then we can try create user pp
+# vim user.pp
+
+Run the above command on both centos and ubuntu
+
+4.7 Summary
+-----------------
+ -  Puppet Manifests .pp text files - notify { 'hello world' : }
+ - validate - sudo puppet parser validate test.pp
+	- Apply manifest -- sudo puppet apply test.pp
+	- Apply code -- sudo puppet apply -e "notify { 'message' : } "
+	- Adding Style and Color:
+		○ Install a module  - sudo puppet module install \theurbanpenguin/puppet_vim
+		○ Apply - sudo puppet apply -e \ "include puppet_vim"
+	
+5.1 Puppet Resources: - smallest building blocks of the puppet language
+	- Puppet resources: The Big Three
+		○ Package
+		○ File
+		○ Service
+	- Puppet Standard Library
+	- Users and Groups
+	- Hosts
+	- SSH_Authorized_Keys
+	- Resource Defaults
+
+Puppet Resource : When defining a resource we first set the resource type. This should be all in lower-case. We then set a titile and key-value pairs. The title and key value pairs are enclosed within brace-brackets.
+
+Type { 'title' : 
+  attribute => value,
+}
+
+List All available Resource Types:
+#sudo puppet describe --list
+
+Document a Resource Type
+# sudo puppet describe notify
+# sudo puppet describe user
+# sudo puppet describe user --short
+
+Namevar : An attribute may be marked as the namevar for that resource type. We can then use the resource title to populate the designated attribute so long as the attribute is not independently set.
+
+# sudo puppet describe file | grep namevar
+
+File { '/etc/motd':
+  ensure => 'file',
+  content => 'this is my server',
+}
+
+Or
+
+File { 'message':
+  ensure => 'present',
+  content => 'Welcome to my server',
+  path => '/etc/motd',
+}
+
+Demo : 
+#cat /etc/motd
+#vi motd.pp
+
+file { '/etc/motd' :               
+  content => "This is a message\n",
+  ensure  => 'file',               
+}                                  
+
+And then verify to check last cat command
+
+# !cat
+
+5.3 The Big Three Resource:
+
+Package	For Example we can ensure that the package NTP is installed on all hosts
+File	We can configure the time server configuration file, /etc/ntp.conf, on all hosts
+Service	Finally we can make sure that the service is running on all hosts. In CentOS this is ntpd and in ubuntu it is ntp
+
+Package : A resource package allows us to install or remove a package. We do not normally need to set many parameters. The package name can make use of tile.
+
+Package { 'ntp' :
+  ensure => 'installed', #'absent', 'purged', 'latest', '4.1'
+  #name => 'ntp', #not used here as we make use of title
+ provider => 'yum', #Normally not required
+
+Service : Having installed a package we can ensure that the service is running and enabled on system startup
+
+Service { 'ntpd':
+  ensure => 'running', #'stopped',
+  #name => 'ntp', #Useful where the service name differs,
+  enable => true, #false
+
+File : Larger configuration files are often best managed with templates or using the source parameter. We will see this in later courses. We can use variables, which we cover in more detail in the next module, for our content.
+
+$ntp_conf = '#Managed by Puppet
+Server 192.168.0.3 iburst
+Driftfile /var/lib/ntp/drift
+
+File { /etc/ntp.conf':
+  ensure => 'file',
+  content => $ntp_conf, }
+
+5.4 Configuring NTP Using Resources :
+
+#vim ntp1.pp
+
+$ntp_conf = '#Managed by puppet
+  server 192.168.0.3 iburst
+  drift file /var/lib/ntp/drift'
+Package { 'ntp' : }
+File { '/etc/ntp.conf' :
+  ensure => 'file',
+  content => $ntp_conf,
+  owner => 'root',
+  group => 'wheel',
+  mode => '0664',
+}
+Service { 'NTP_Service':
+  ensure => 'running',
+  enable => true,
+  name => 'ntpd',
+}
+
+#sudo puppet parser ntp1.pp
+
+#test
+#ntpq -p
+
+5.5 Other Resource to Use:
+User: we can add or remove users with puppet. The password we set should be encrypted. For this we can use the pw_hash function from the standard library module. This will need to be installed if not already. The group membership is multi-valued so we use an arrary.
+
+User { 'pavan' :
+  ensure => 'present',
+  managehome => true,
+  groups => ['sudo', 'user's']
+  password => pw_hash('Password1', 'SHA-512', 'salt'),
+
+Groups : Groups again are very simple and will default to ensure => 'present' if not specified.
+
+Group { 'admins' : }
+
+Local Host Entry : 
+If DNS is not an option we can easily manage local host entries with the host resource type.
+
+Host { 'timeserver' :
+  ip => '192.168.0.3',
+  host_aliases => 'tock',
+
+SSH Authorized Keys : To make use of public key authentication in SSH a user's public key must be added to the authorized_keys file on all hosts that the user will access. Puppet can make this happen easily. The key we share should be public key generated by the user.
+
+Ssh_authorized_key { 'tux@centos7' :
+  user => 'pavan',
+  type => 'ssh-rsa',
+  key => 'sdjk jsdls kdslkj dlslkjd',
+}
+
+5.6 Working with Users and Groups:
+------------------------------------------------
+# sudo puppet module install puppetlabs/stdlib
+
+Vim user.pp
+
+User { 'pavan' :
+  managehome => true,
+  groups = ['wheel', 'users'],
+  password => pw_hash('Password1', 'SHA-512', 'random'),
+}
+
+#sudo puppet parser validate user.pp
+
+5.7 Creating Host File Entries :
+----------------------------------------
+Host { 'timeserver' :
+  ip => '192.168.0.3',
+  host_aliases => 'tock'
+}
+
+5.8 Distributing SSH Keys
+----------------------------------
+
+# ssh-keygen -t rsa
+
+
+#cd.ssh/
+#cat id_rsa.pub
+
+#vim ssh.pp
+
+Ssh_authorized_key { 'vagrant@centos7' :
+  user => 'vagrant',
+  type => 'ssh-rsa',
+  key => 'Paste the content'
+
+: r .ssh/id_rsa.pub
+
+Scp ssh.pp vagrant@192.168.56.16:
+
+On ubuntu : 
+Sudo puppet apply ssh.pp
+
+On centos 
+Ssh vagrant@192.168.56.16
+
+5.9 Working with Resource Defaults:
+--------------------------------------------------
+File { 
+  owner => 'root',
+  group => 'wheel',
+  mode => '0664',
+  ensure => 'file',
+}
+
+#file { '/tmp/puppet' :
+ ensure => 'directory',
+}
+#file { '/tmp/puppet/file1': }
+#file { '/tmp/puppet/file2': }
+#file { '/tmp/puppet/file3': 
+  mode => '0775',
+}
+
+5.10 Summary
+--------------------
+Puppet describe file - List documentation for the file resource.
+
+6.1 Understanding the Puppet Language:
+------------------------------------------------------
+Exposing the Puppet Language:
+ - Variables, Arrays, Hashes and HereDoc
+	- Facts and Facter
+	- Conditional Expressions
+	- Matching to Regular Expressions
+	- Lambdas and Interations
+
+Variables : Variables are denoted with the $. In Puppet 4 the variable name must start with a lower-case letter or underscore. They can contain lower-case letters, numbers and underscores.
+
+$message = 'The message' #string
+$ntp_service = 'ntp' # String
+$size = 100 # Number
+$answer = false #Boolen
+
+Arrays : Arrays contain lists of values and are denoted using [] brackets.
+
+$admingroups = ['wheel', 'adm']
+
+Hashes (hashed arrays) : A hashed array contain key pairs, note that the key is quoted unlike a resource.
+
+$user = {
+  'username' => 'bob',
+  'uid' => '2011',
+}
+
+Using Variables : If a variable is used on its own then we do not need to delimit it. Whereas if it is used within a string we need to delimit the variable with brace-brackets. Use double quotes to interpolate the variable.
+
+Service { 'NTP_Service' :
+  ensure => 'running',
+  enable => true,
+  name => $ntp_service,
+}
+
+Notify { "The ${ntp_service} is up and running": }
+
+Accessing Arrays:
+To access  a single value from and array we can use the index or key.
+
+$admingroups = ['wheel', 'adm']
+Notify { "The first group is ${admingroups[0]}" : }
+
+$user = { 'username' => 'pavan]', 'userid' => '2001', }
+Notify { "The user's name is ${user ['username' ]}" : }
+
+Heredoc :  To create long multi-line string we can use the heredoc. The tag END can be anything but must be consistent at the start and the end of the string.
+
+$ntp_conf = @(END)
+  driftfile /var/lib/ntp/drift
+  server tock prefer iburst
+  server uk.pool.ntp.org
+END
+
+6.2 Working with Scaler Variables:
+---------------------------------------------
+Vi play.pp
+
+#This is a simple test
+
+$ntp_service = 'ntp'
+Notify { $ntp_service : }
+Notify { "The ${ntp_service} is running" : }
+
+Cp ntp1.pp to ntp2.pp
+
+
 
