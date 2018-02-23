@@ -79,5 +79,19 @@ Installation Directories:
   - Database logs:/var/log/puppetlabs/puppetdb and /var/log/puppetlabs/postgresql
   - orchestration logs:/var/log/puppetlabs
   
-  
+ 2.3 Installing Puppet Part2:
+ ----------------------------
+ vi /root/pe.conf
  
+ {
+   "console_admin_password": "password_goes_here",
+   "puppet_enterprise::puppet_master_host": "puppetmaster.jhanci.com",
+   "pe_install::puppet_master_dnsaltnames": [
+      "puppet",
+      "master",
+      "puppetmaster",
+     ],
+    "puppet_enterprise::use_application_services": true
+   }
+   
+   
