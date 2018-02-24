@@ -94,4 +94,155 @@ Installation Directories:
     "puppet_enterprise::use_application_services": true
    }
    
-   
+ 2.3 Installing Puppet Par2
+--------------------------
+Split installation
+1:PUppet master
+2:puppet db
+3:puppet pe-console
+
+on node : 
+
+curl -k https://puppetmaster.jhanci.com:8140/packages/current/install.bash | sudo bash
+
+Sign Certification on master
+puppet cert list
+puppet cert sign node1.jhanci.com
+
+on node:
+puppet agent -t
+
+on server:
+Installation directories
+
+cd /etc/puppetlabs
+ls
+
+cd puppet
+
+cd /opt/puppetlabs - All binaries will install here in this path, all command line tools will be packed
+ls
+
+cd /etc/puppetlabs/puppet/ssl - All our certificate requests would be placed here
+
+cd certificate_requests/
+ls
+cd ..
+
+cd cert - All our certificate requests
+
+#services directory
+/usr/lib/systemd/system
+ls
+ls | grep 'pe-'
+
+-------------
+2.4 Puppet.conf
+
+puppet.conf
+- The puppet.conf file is located in /etc/puppetlabs/puppet
+- Settings can be overridden at the command line
+
+Config Sections:
+----------------
+- Main : The global section used by all commands and services.
+- master : Used by the Puppet master service and the "puppet cert" command
+- agent: Used by the Puppet agent service.
+- user: Used by the "puppet apply" command
+
+Note: Settings are loaded at service start time; to apply changes made to puppet.conf
+a restart to the puppet service is required.
+
+Interpolating Variables:
+------------------------
+The values of settings are available as variables within puppet.conf, and you can insert them into the values of other settings. To reference a setting as a variable, prefix its name with a dollar sign.
+Example:
+ $codedir
+ $condir
+ $vardir
+ 
+ Sample puppet.conf for a Puppet Master:
+ ---------------------------------------
+ [main]
+	certname = puppet.domain.com
+	server = puppet.domain.com
+	user = pe-puppet
+	group = pe-puppet
+	environment_timeout = 0
+	app_management = true
+	module_groups = base+pe_only
+	environmentpath = /etc/puppetlabs/code/environments
+	codedir = /etc/puppetlabs/code
+ [agent]
+	graph=true
+ [master]
+	node_terminus = classifier
+	storeconfigs = true
+	storeconfigs_backend = puppetdb
+	reports = puppetdb
+	certname = puppet.domain.com
+	always_cache_features = true
+
+	Sample puppet.conf for an Agent Node
+	--------------------------------------
+[main]
+	server = puppet.domain.com
+	certname = node1.jhanci.com
+
+	Fundamental Settings, Agent
+	-----------------------------
+- Basic Settings:
+	- ca_server: server used for certificate authority requests
+	- certname: Certificate name to use when communicating with the server
+	- server: Hostname of the Puppet master
+	- environment: Defaults to Production
+
+- Run behavior:
+	- noop: Agent will not do any work, only simulate changes and report to the master
+	- priority: Sets the nice command so catalog enforcement does not use up CPU
+	- report: determines if reporting is enabled(defaults to true)
+	- usechacheonfailure: Fall back to last known working catalog if convergence fails
+	
+- Service Behavior:
+	- runinterval: How often puppet agent daemon runs
+	- waitforcert: Keep trying to run puppet agent if the certificate is not initially available.
+
+- Configuration Settings via the commmand line
+	- puppet config set <SETTING NAME><VALUE> --section <CONFIG SECTION>
+	
+Demo: Remove certificate from agent
+modify puppet.conf in agent node
+
+on node:
+rm -rf ssl
+
+on master:
+puppet cert list -a
+
+puppet cert clean node1.jhanci.com
+
+on agent:
+puppet agent -t
+
+update puppet.conf through command line
+puppet config set runinterval 2m --section main
+
+Restart the pppet services
+
+systemctl restart puppet.service
+
+check the logs in 
+tail -f /var/log/messages
+
+vi /etc/puppetlabs/puppet/puppet.conf
+
+update in [main]
+codedir = /etc/puppetlabs/code
+environmentpath = $codedir/environments
+
+Restart puppet master service
+service pe-puppetserver restart
+
+ 
+
+
