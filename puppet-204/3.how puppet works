@@ -1,0 +1,153 @@
+3.1 Resource Abstraction Layer
+------------------------------
+Resource Abstraction Layer: A system configuration is a collection of resources that make up the state of your system.
+	-	Users
+	-	Cronjobs
+	-	Packages installed
+	-	Services
+	-	Etc.
+- Primary issue: A command to start a service might be different, depending(SysVinit, Systemd, init, windows, etc.)
+-Solution: Declare the state of a service rather than stating how to run the service
+- Every resource is associated with a resource type, which determines the kind of configuration it manages.
+- Declares what the resource looks like not how it is enforced.
+- Every resource type has:
+	- a tile
+	- a set of attributes
+Resource Type Format:
+<type>{'<title>':
+ <attribute>=><value>,
+}
+
+Example:
+user { 'username':
+ ensure=> present,
+ uid => '102',
+ gid => 'wheel',
+ shell => '/bin/bash',
+ home => '/home/username',
+ managehome=> true,
+}
+
+A resource declaration is an expression that describes the desired state for a resource and tells Puppet to add it to the catalog. When Puppet applies that catalog to a target system, it manages every resource it contains, ensuring that the actual state matches the desired state.
+
+Providers implement the same resource type on different kinds of systems. They usually do this by calling out to external commands.
+Example:
+	- redhat/centos uses yum and RPM
+	- Debian/ubuntu uses apt-get and DPKG
+	- Ruby uses gems
+- When building modules, we are using the Puppet DSL to declare the desired state of resource on a node.
+- Fundamentally, all we are doing with Puppet is managing resources on large and automated scale while caring "as little as possible" about the platform/distribution.
+- In puppet we are using resource types to define instances of a resource on a node.
+https://docs.puppet.com/puppet/latest/type.html
+
+Commands:
+	- Puppet resource: View resources already installed on node(node level)
+		- puppet resource [type]
+		- puppet resource [type][name]
+		- puppet resource user
+		- puppet resource user root
+	- puppet describe: Provide information about resource types within puppet.
+		- puppet describe -l (list all resource types available)
+		- puppet describe -s [type]
+		- puppet describe [type]
+		
+		3.2 Using Resource Types to create a Manifest
+		---------------------------------------------
+		Apply Stype with VIM
+		******************
+		puppet module install theurbanpenguin-puppet_vim --version 0.1.3
+		puppet apply -e " include puppet_vim "
+		
+		cd /etc/puppetlabs/code/environments/production/
+		cd manifests
+		vi admin.pp
+			user { 'admin':
+				ensure => present,
+				home => '/home/admin',
+				managehome => true,
+				gid => 'wheel',
+				shell => '/bin/bash',
+			}
+		
+		puppet apply admin.pp
+		vi admin.pp
+			group {'admin':
+				ensure => present',
+			}
+			user { 'admin]:
+				ensure => present,
+				home => '/home/admin',
+				managehome=> true,
+				gid => 'wheel',
+				shell => '/bin/bash'
+			}
+		
+		notifier resource type
+		vi notifier.pp
+			notify {'This is a test!!!': }
+			
+	vi test_file.pp
+		file {'/homei/admino/test_file1.txt'
+			ensure => file,
+			content => 'This is First Test file',
+			mode => '0600',
+			owner => 'admin',
+			group => 'root',
+		}
+	
+commands:
+puppet resource user
+
+#Handling passwowrd
+vi admin.pp
+user { 'admin':
+	ensure => 'present',
+	password => 'Sunday@123',
+}
+puppet apply admin.pp
+
+#encrypt the password
+openssl passwd -l
+update the encrypted password in admin.pp
+
+puppet describe -l
+puppet describe -s
+
+3.3 Catalog Compliation:
+Catalog Compliation:
+	- A catalog describes the desired state for each resource on the node.
+		- The catalog is compiled on the master
+		- the complied catalog is shipped to the ndode during the Puppet run
+		- The desired state is enforced on the node by the catalog
+		- The catalog is stored in PuppetDB
+			-Default on PE install
+		
+		- Puppet compiles the catalog using sources of configuration info
+			- Agent-provided data(Facts)
+			- External Data(Hiera)
+			- Puppet Manifests(Puppet Code)
+		
+		Catalog Compilation:
+			-Retrieve the node object:
+				- Node object provides factual information about a node.
+				- Set scope-level variables.
+			- Set variables from the node object, facts, and the certificate:
+				- Variables provided by the node object will now be set as top-scope
+				- Node's facts are also set as top-scope variables
+				- Variables provided by the Puppet master will also be set
+			- Evaluate the main manifest(site.pp)
+				- Match any matching node definitions
+			- Load and evaluate classes from modules:
+				- The environmentpath setting in puppet.conf tells puppet where to fine environments
+					- /etc/puppetlabs/code/environments/<ENVIRONMENT>/modules
+					- Default environment is production/
+			- Evaluate classes from the node object
+				- variables provided by the node object will be set as top-scope
+				- Node's facts are set as top-scope variables
+				- variables provided by the Puppet master will be set
+			
+
+
+			
+		
+				
