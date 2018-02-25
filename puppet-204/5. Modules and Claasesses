@@ -1,0 +1,65 @@
+5.1 Setting Up A Github Account
+-------------------------------
+Login to github account
+#generate SSL certificate on puppet master
+ssh-keygen -t rsa -b 4096 -C "savipavan@gmail.com"
+cat /root/.ssh/id_rsa.pub
+
+copy the keygen
+go personal settings => SSH and GPG Keys -> click on add new ssh -> paste the key which we copied
+
+Add new repository:
+install git
+clone repository
+#git clone git@github.com:savipavan/pe204.git
+ls
+
+5.2 Modules:
+------------
+Creating a Module:
+	- Module are self-contained bundles of code and data used to manage single piece of technology.
+	- How to generate a module:
+		- puppet module generate <MAINTAINER>-<MODULE_NAME>
+			- The tests directory deprecated
+			- The examples directory has been added.
+		- Module names contain
+			- lowercase letters
+			- Numbers
+			- Underscores
+			- should begin with a lowercase letter
+			- Module names cannot contain the namesspace separator(::)
+			- Modules should not be nested
+
+Module Layout:
+	- <MODULE NAME>
+		- manifests
+		- files
+		- templates
+		- lib
+		- facts.d
+		- examples
+		- spec
+		- functions
+		- types
+
+Important Directories:
+	-manifests/ - Contains all of the manifests in the module.
+	- files/ - Contains static files, which managed nodes can download.
+	- lib/ - Contains plugins, like custom facts and custom resource types.
+	- facts.d/- contains external facts, which are an alternative to Ruby-based custom facts.
+	- templates/ - Contains templates, which the module's manifests can use.
+	- examples/ - Contains examples showing how to declare the module's classes and defined types.
+
+#Create first module:
+cd /etc/puppetlabs/code/environments/production/modules:
+puppet module generate pavan-ssh
+
+git init
+git add .
+git commit -am "Init Commit"
+git remote add origin https://github.com/savipavan/pe204.git
+git push origin master
+
+5.3 Classes
+------------
+
