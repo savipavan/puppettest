@@ -1,0 +1,99 @@
+4. Certificate Signing Request:
+	puppet server includes a certificate authority(CA) service that accepts certificate signing requests(CSRs) from nodes, serves certificates and a certificate revocation list(CRL) to nodes, and optionally accepts commands to sign or revoke certificates
+		- when you install a new PE agent, the agent will automatically submit a certificate signing request(CSR) to the Puppet master.
+		- Before Puppet agent nodes can retrieve their configuration catalogs, the certificate needs to be signed by the certificate authority(CA).
+	
+commad :
+	pupppet cert
+	puppet cert list
+	puppet cert sign <NAME>
+	puppet cert revoke <NAME>
+	
+DNS Altnames:
+	puppet cert sign <HOSTNAME> or -all_ --allow-dns-alt-name<NAME>
+	On the Puppet Master:
+		- puppet cert clean<NAME>
+	- Deleting SSL certs on agent:
+		- cp -r /etc/puppetlabs/puppet/ssl /etc/puppetlabs/puppet/ssl_bak
+
+Auto Signing:
+	- Should only be used when the environment fully trusts any computer able to connect to the Puppet Master.
+	- The CA uses a config file contains a whitelist of certificate names and domain names.
+		- $condir/autosign.conf
+		- *.domain.com
+	- To disable autosigning
+		- autosign = false in the [master] in puppet.conf
+Demos:
+	puppet cert list
+	puppet cert list -a
+
+	#when we check the alt_names fist stop puppet service
+	on node:
+	service puppet stop
+	vi puppet.conf
+		dns_alt_names = demo_agent
+	#delete ssl dir
+		rm ssl
+	on master:
+		puppet cert clean dmo_agent
+	on node: puppet agent -t
+	on master : puppet cert sign node1.jhanci.com --allow-dns-alt-names
+	puppet cert list -a
+
+4.2 Running the Puppet Agent:
+-----------------------------
+Spin up Ubuntu Node
+ssh to the new ubuntu node
+copy agent url from PE-Console and install in agent node
+go classification in pe console -> pe-master -> claasess -> search for pe_repo:platform:ubuntu:14-04
+
+run puppet run on mater to take effect
+	puppet agent -t
+on node: run puppet agent URL again
+
+on puppet master:
+#ew can find new ubunt repo
+cd /etc/puppetlabs/server/data/packages/public/current
+or
+/opt/puppetlabs/server/data/packages/public/2016.4.2/
+
+on ubuntu node:
+fix issue:
+cd /etc/apt/apt.conf.d/
+vi 90pe-repo-fix
+	APT::Get::AllowUnauthenticated 1;
+:wq!
+
+run the puppet agent url again
+#command to fix the problem:
+#echo 'APT::Get::AllowUnauthenticated 1;' >/etc/apt/apt.conf.d/90pe-repo-fix
+
+on master:
+#sign certificate:
+puppet cert list -a
+puppet cert sign node2.jhanci.com
+#
+open console -> classification -> create Ubuntu --> add new node2 to the group
+
+#check noop when run command
+first stop service in node
+service puppet stop
+puppet agent -t --noop
+
+puppet agent --help
+
+chown pe-puppet:pe-puppet -R stage/
+
+------------------------
+4.3 Using site.pp
+
+
+
+ 
+
+
+
+
+	
+	
+	
