@@ -244,5 +244,13 @@ Restart puppet master service
 service pe-puppetserver restart
 
  
+Open https://forge.puppet.com
+Install Java by runnning below command
+#puppet module install puppetlabs-java
+
+#cd /etc/puppetlabs/code/environents/production/modules
+#ls
+
+
 
 
