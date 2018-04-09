@@ -1,0 +1,1 @@
+A practical guide with the latest features of Puppet 5
