@@ -26,7 +26,18 @@ Auto Signing:
 Demos:
 	puppet cert list
 	puppet cert list -a
-
+	
+	#on a node:
+	cd /etc/puppetlabs/puppet
+	ls
+	rm -rf ssl
+	
+	#on master
+	puppet cert clean dmo_agent
+	
+	#on agent :
+	puppet agent -t
+	
 	#when we check the alt_names fist stop puppet service
 	on node:
 	service puppet stop
@@ -68,11 +79,14 @@ run the puppet agent url again
 #command to fix the problem:
 #echo 'APT::Get::AllowUnauthenticated 1;' >/etc/apt/apt.conf.d/90pe-repo-fix
 
+on node: run the install.bash command URL and install puppet agent
+
 on master:
 #sign certificate:
 puppet cert list -a
 puppet cert sign node2.jhanci.com
-#
+# run puppet agent -t on node
+
 open console -> classification -> create Ubuntu --> add new node2 to the group
 
 #check noop when run command
