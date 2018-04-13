@@ -62,4 +62,237 @@ git push origin master
 
 5.3 Classes
 ------------
+…or create a new repository on the command line
 
+echo "# puppet204" >> README.md
+git init
+git add README.md
+git commit -m "first commit"
+git remote add origin https://github.com/savipavan/puppet204.git
+git push -u origin master
+
+…or push an existing repository from the command line
+
+git remote add origin https://github.com/savipavan/puppet204.git
+git push -u origin master
+
+-------------
+5.3 Classes:
+----
+Puppet Classes:
+	- Classes are named blocks of puppet code tha are used in a modules.
+	- They are not applied until they are invoked by name.
+	- They can be added to a node's catalog by declaring it in a manifest or in the ENC.
+	- They use Resource Types to configure packages, files, services, etc.
+	- Classes can use parameters to request external data
+		- A default parameters should be supplied
+		- Each parameter can be proceded by an optional data type.
+	- Classes are singleton
+	- Classes names can consist of one or more namespace segments.
+	- Each names segment must begin with a lowercase letter and can include:
+		- Lowercase letters
+		- Digits
+		- Underscores
+	- Namespace segments should match the following reqular expresession:
+		- \A[a-z][a-z 0-9]*\Z
+		- class_name123
+	- Multiple namespace segments can be joined together in a class namewith the ::(double colon) namespace separator.
+		- \A[a-z][a-z0-9_]*)?(::[a-z][a-z0-9_)*)*\Z
+		- module_name::class_name
+
+Puppet Class:
+	class <CLASS_NAME>(
+		<DATA_TYPE><PARAM_NAME>
+		){
+			...PUPPET CODE...
+		}
+	
+	Example :
+		class ssh (
+			file {"/etc/ssh/ssh_config":
+				ensure => file
+				source => "puppet://module/ssh/ssh_config"
+				}
+			}
+		
+Class Variables:
+	- Variables names begin with a $ (dollar sign) and are case-sensitive
+	- variable names can include:
+		- Uppetcase and lowercase letters
+		- Numbers
+		- Underscores(_)
+	- There are reserved variable names:
+		- Data Types
+		- Function names
+
+# on puppet master:
+cd /etc/puppetlabs/code/environments/production/modules/ssh
+vi 	init.pp
+
+	class ssh {
+		class { 'ssh::install': } -> 
+		class { 'ssh::service': } 
+:wq!
+
+vi install.pp
+	class ssh:: install {
+		package { 'ssh':
+			ensure => present,
+		}
+	}
+:wq!
+
+vi service.pp
+	class ssh::service {
+		service { 'sshd':
+			ensure => running,
+			enable => true,
+			hasstatus => true
+			hasrestart => true,
+		}
+	}
+:wq!
+
+#test the code
+puppet parser validate init.pp
+
+puppet parser validate install.pp
+
+puppet parser validate service.pp
+
+# on console:
+-> nodes -> classification -> Add group -> group name "base" -> Add
+click on "base" class -> classes -> Add new class "select ssh"-> Add class -> 
+click on "Roles" -> certname -> select Ubuntu node -> pin node -> commit
+
+# run the puppet agent -t on ubuntu node
+
+#Test
+systemctl stop sshd.service
+
+puppet agent -t
+
+
+******
+5.4 Facter:
+----
+Facter :
+	- Facter is Puppet's cross-platform system profiling library. It discovers and reports per-nnode facts, which are available in your puppet manifests as variables.
+		- Core Facts: Built-in fact that ships with Facter.
+		- External Facts: Provide a way to use arbitrary executables or scripts as facts
+		- Custom Facts: Extend Facter by writing Ruby Code.
+	- Facter Command:
+		- facter : returns a list all facts.
+		- facter <fact>: Returns a particular fact.
+
+on puppet master:
+cd /etc/puppetlabs/code/environments/production/modules/ssh
+
+vi params.pp
+	class ssh::params {
+		case $facts[os] [family] {
+			'Debian': {
+				$package_name = 'openssh-server'
+				$service_name = 'ssh'
+			}
+			'Redhat': {
+				$package_name = 'openssh-server'
+				$service_name = 'sshd'
+			}
+			default: {
+				fail("${facts['operatingsystem']} is not supported!")
+				}
+			}
+		}
+
+vi init.pp
+
+	class ssh(
+		String $package_name = $::ssh::params::package_name,
+		String $service_name = $::ssh::params::service_name,
+		) inherits ::ssh::params {
+		
+	:wq!
+	
+	puppet parser validate init.pp
+	puppet parser validate param
+	
+	class ssh::install (
+		String $package_name = $::ssh::package_name,
+		) {
+			package { 'ssh-package':
+				ensure => present,
+				name 	=> $package_name,
+			}
+		}
+
+	class ssh::service (
+		String $service_name = $::ssh::service_name,
+		) {
+			service { 'ssh-service':
+				ensure => running,
+				name 	=> $service_name,
+				enable	=> true,
+				hasstatus => true,
+				hasrestart	=> true,
+			}
+		}
+	
+	puppet parser validate init.pp
+	puppet parser validate param.pp
+	puppet parser validate install.pp
+	puppet parser validate service.pp
+
+# on consle
+nodes -> classification
+
+#uninstall openssh server from ubunut
+apt-get purge openssh-server
+service puppet stop
+
+puppet agent -t
+
+#on master
+
+vi params.pp		
+	class ssh::params {
+		#case $facts[os] [family] {
+		case $factsfamily {
+			'Debian': {
+				$package_name = 'openssh-server'
+				$service_name = 'ssh'
+			}
+			'Redhat': {
+				$package_name = 'openssh-server'
+				$service_name = 'sshd'
+			}
+			default: {
+				fail("${facts['operatingsystem']} is not supported!")
+				}
+			}
+		}
+
+
+******
+5.5 Autoloading:
+----
+Autoloading:
+	- Puppet will use a class's full name to find it in your module.
+	- Every class should be in its own file and use the .pp file extention.
+	- Names map to the file.
+		- First segment in a name identifies the module.
+		- init.pp class will always be the module name.'
+		- The last segment identifies the file name.
+		- Any segments between the first and last are subdirectories in the manifest directory.
+Example:
+	apche -<MODULE DIRECTORY>/apache/manifests/init.pp
+	apache::mod - <MODULE DIRECTORY>/apache/manifests/mod.pp
+	apache::mod::passenger - <MODULE DIRECTORY>/apache/manifests/mod/passenger.pp
+
+# puppet master
+cd /etc/puppetlabs/code/environments/production/modules/ssh
+
+*****
+5.6 Declaring classes in the PE Console:
+--
+nodes --> classeficition --> base --> classes
