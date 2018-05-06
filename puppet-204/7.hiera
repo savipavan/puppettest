@@ -1,0 +1,151 @@
+7.1 Hiera Overview:
+---
+	- Hiera is a key/value data store for looking up data.
+	- Let you set node-specific data without repeating yourself
+	- Why use Hiera?
+		- Single source of truth for your data
+			- Configure default data with hierarchal overrides
+		- Use Puppet modules from the Forge.
+			- No need to edit the module, just pu the data in Hiera
+		- Publish your own modules for collaboration
+			- Keeps your data out of your module before sharing it.
+			- No more clashing variable names.
+Setting up Hiera:
+----
+	- hiera.yaml is located in /etc/puppetlabs/puppet
+	- :backends: tells Hiera what kind of data sources it should process. In this case, we'll be using YAML files.
+	- :yaml: configures the YAML data backend.
+	- :datadir: tells Hiera the location of the data sources.
+	- :hierarchy: configures the data sources Hiera be using
+		- separate their hierarchies into directories.
+		- More specific data at the top.
+		- Least specific at the bottom
+		- we can use facts in your Hiera lookups.
+			Example Hiera.yaml
+				:backends:
+					-yaml
+				:yaml:
+					:datadir: "/etc/puppetlabs/code/environments/%{environment}/hieradata"
+				:hierarchy:
+					-"nodes/%{::trusted.certname}"
+					- common
+Automatic Parameter Lookup:
+	- process of automatic parameter lookup:
+	- look for parameters passed using the class{} declaration.
+		- If no parameter is passed, it will look in the Hiera data source for the parameter <CLASS NAMESPACE>::parameter
+		- If it's not found in the Hiera data source it will use the default set "common"
+	Example:
+		define apache::vhost{
+		  $port,
+		 )
+		 
+		 #/etc/puppetlabs/code/environments<ENVIRONMENT>/hieradata/common/yml
+		--
+		apache::vhost::port::80
+hiera_array Function:
+	- hiera_array: Finds all matches of a key throughout the hierarchy and retuns them as a single flattened array of unique values. If any of hte matchd values are arrays, they're flattened and included in the results. This is called an array merge lookup.
+	- Arguments:
+		- A string key that Hiera searches for in the hierarchy. Required.
+		- An optional default value to return if Hiera doesn't find anything matching the key.
+		- The optinal name of an arbitrary hierarchy level to insert at the top of the hierarchy.
+hiera_hash function:
+	- hiera_hash: Finds all matches of a key throughout the hierarchy and retuns them in a merged hash. If any of the matched hashes share keys, the final hash uses the value from the hightest priority match. This is called a hash merge lookup.
+	- Arguments:
+		- A string key that hiera searches for the hierarchy required.
+		- An optional default value to return if Hiera doesn't find anything matching the key.
+		- the optional name of the arbitrary hierarchy level to insert at the top of the hierarchy.
+
+7.2 Setting up our Configuration File and Data Sources:
+----
+
+configure hiera
+cd /etc/puppetlabs/hiera
+vi hiera.yaml
+	<update datadir>
+	:yaml
+		:datadir: /etc/puppetlabs/code/environments/%{environment}/hieradata
+	:wq!
+
+cd /etc/puppetlabs/code/environments/production/hieradata/
+	vi common.yaml
+		---
+		foo: bar
+	:wq!
+	
+	Since we done changes, need to restart puppet serer service
+		service pe-puppetserver restart
+	Testing:
+		hiera -d foo environment=production
+
+Add ntp details in to hiera
+cd /etc/puppetlabs/code/environments/production/hieradata
+vi common.yaml
+---
+ntp_server:
+	- 0.ubuntu.pool.ntp.org
+	- 1.ubuntu.pool.ntp.org
+	- 2.ubuntu.pool.ntp.org
+	- 3.ubuntu.pool.ntp.org
+:wq!
+
+testing:
+hiera -d ntp_server environment=production
+
+Updataing the common.yaml to get the data from profiles.
+---
+profile::base::ntp_server:
+	- 0.ubuntu.pool.ntp.org
+	- 1.ubuntu.pool.ntp.org
+	- 2.ubuntu.pool.ntp.org
+	- 3.ubuntu.pool.ntp.org
+
+profile::apache::default_vhost: false
+:wq!
+
+testing:
+hiera -d profile::base::ntp_servers environment=production
+hiera -d profile::base::apache environment=production
+
+7.3 Using Hiera by Example:
+---
+cd /etc/puppetlabs/code/environments/production/modules/profile/manifests
+
+vi apache.pp
+	class profile::apache(
+		Boolean $default_vhost = false,
+		Hash $apache_vhost_servers,
+		#Integer $port = 80,
+		$String $docroot = '/var/www/test',
+	) {
+		class { '::apache':
+			default_vhost => $default_vhost,
+		}
+		create_resources(::apache::vhost, $apache_vhost_server)
+		#::apache::vhost {'pavan.alearn.net':
+		#port => 80,
+		#docroot => $docroot,
+		#}
+	}
+	
+	cd /etc/puppetlabs/puppet/hieradata
+	
+	---
+	:backends:
+		- yaml
+	:hierarchy:
+		- "nodes"/{::fqdn}
+	
+	mkdir nodes
+		vi pavan.alearn.net.yaml
+			---
+			profile::apache::apache_vhost_servers: {
+				'pavan.alearn.net.yaml': {
+					port: 80,
+					docroot: '/var/www/test',
+				},
+				'pavan2.alearn.net.yaml': {
+					port: 80,
+					docroot: '/var/www/test2',
+				},
+
+				
