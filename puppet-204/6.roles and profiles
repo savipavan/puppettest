@@ -1,0 +1,176 @@
+6. Roles and Profiles:
+---------
+Overview : The roles and profiles are used to build reliable, reusable, reconfigurable, and refactorable system configurations.
+	- There are two extra layers of indicatiion between your node classifier and your component modules.
+	- Component modules: Normal modules that manage one particular technology. (For example, puppetlabs/apache.)
+	- Profiles: Wrapper classes that use multiple component modules to configure a layered technology stack.
+	- Roles: Wrapper classes that use multiple profiles to build a complete system configuration.
+	
+	Profile:
+		- A profile is just a normal class stored in the profile module.
+		- Make sure you can safely include any profile multiple times - don't use resource-like declarations on them.
+		- Profiles can include other profiles.
+		- Profiles own all the class parameters for their component classes.
+		- Components class shouldn't use a value from Hiera data.
+		- Ways a profile can get the data it needs to configure component classes:
+			- Hardcode it in the profile.
+			- Look it up from Hiera
+		
+		apache.pp
+		--
+			example:
+				class profiles::apache(
+				  String $apache_vhost_name,
+				  String $apache_vhost_docroot,
+				  Bolean $apache_default_vhost = false,
+				  String $apache_vhost_port = 80,
+				) {
+					class {'apache':
+						default_host => $apache_default_vhost,
+					}
+					apache::vhost {$apache_vhost_name:
+					  port => $apache_vhost_port,
+					  docroot => $apache_vhost_docroot,
+					}
+				}
+		
+Roles:
+--
+			- The only thing roles should do is declare profile classes.
+			- Use include <Profile Name>.
+			- Don't declare any component classes or normal resources in a role.
+			- Roles can use conditional logic to decide which profiles to use. Roles should not have any class parameters of their own.
+			- Roles should not set class parameters for any profiles.
+			- The name of a role should be based on your business's conversatiional name for the type of node it manages.
+
+Example:
+Role Names :
+	role::web
+	role::jenkins::master
+	role::jenkins::slave
+
+Example:
+	class role::web {
+		include profile::base
+		include profile::apache
+		include profile::php
+	}
+- Assigning a role to node:
+	- The PE console node classifier
+	- The main manifest
+	- Hiera or Puppet lookup
+
+6.2 Creatin a profile module:
+on puppet master:
+
+cd /etc/
+puppet module generate pavan-profile
+cd profile/manifest
+rm -rf init.pp
+vi base.pp
+	class profile::base(
+		$ntp_servers = [
+			'0.ubuntu.pool.ntp.org',
+			'1.ubuntu.pool.ntp.org',
+		],
+	){
+		include ::ssh
+		class ':ntp': {
+			servers => $ntp_servers,
+			}
+		}
+# install or include puppetlabs-selinux module from forge
+on puppet master:
+install selinux module:
+	puppet module install puppet-selinux --version 0.8.0
+# now create another profile for selinux
+vi selinux.pp
+	class profile::selinux {
+		include ::selinux
+	}
+
+now open up base profile again
+vi base.pp
+#insert condition:
+class profile::base(
+		$ntp_servers = [
+			'0.ubuntu.pool.ntp.org',
+			'1.ubuntu.pool.ntp.org',
+		],
+	){
+		include ::ssh
+		class { ':ntp':
+			servers => $ntp_servers,
+			}
+		}
+	if $facts['os']['family'] == 'RedHat' {
+		include ::profile::selinux
+	}
+}
+
+on console: 
+nodes --> classfication --> base --> classes --> add profile
+
+on centos node:
+make sure puppet service is stopped
+systemctl stop puppet
+
+execute puppet run
+puppet agent -t
+
+6.3 Creating a Role Module:
+---------
+on puppet master:
+cd /etc/puppetlabs/code/environments/production/modules
+puppet module generate pavan-role
+
+cd role/manifests
+vi linux.pp
+	class role::linux {
+		include ::profile::base
+	}
+:wq~
+
+on console: add the role in the classification
+
+#on node stop ntp service and remove ntp.configuration
+service ntpd stop
+rm /etc/ntp.conf
+
+execute puppet run
+puppet agent -t
+
+Another example:
+--------
+Install apache module from forge:
+
+puppet module install puppetlabs-apache --version 1.11.0
+
+cd role/manifests
+vi web.pp
+
+class role::web {
+	include profile::linux
+	include profile::apache
+}
+
+:wq!
+
+cd ../../profile/manifests
+vi apache.pp
+	class profile::apache(
+		boolean $default_vhost = false,
+		Integer $port = 80,
+		String $docroot = '/var/www/test',
+	) {
+		class { '::apache':
+			default_vhost => $default_vhost,
+		}
+		::apache::vhost { 'pavan.alearn.net':
+			port    => $port,
+			docroot => $docroot,
+		}
+	}
+:wq!
+
+apply the configurations on console.
